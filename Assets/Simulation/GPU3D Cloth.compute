@@ -62,9 +62,9 @@ void LightKernel(uint3 id : SV_DispatchThreadID)
 
     if (dotValue > cos(lightAngle * 0.0174533f * 0.5f))
     {
-        InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * lightForceVector.x));
-        InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * lightForceVector.y));
-        InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * lightForceVector.z));
+        InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * lightForceVector.x / hairNodeBuffer[currIndex].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * lightForceVector.y / hairNodeBuffer[currIndex].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * lightForceVector.z / hairNodeBuffer[currIndex].mass));
     }
 }
 
@@ -102,20 +102,20 @@ void ForceKernel(uint3 id : SV_DispatchThreadID)
         float3 currPrev = float3(prev.x - curr.x, prev.y - curr.y, prev.z - curr.z);
         bendingForce = bendingStiffness * (currNext + currPrev);
         
-        InterlockedAdd(hairNodeBuffer[currIndex - 1].ax, -(int)(floatToInt * 0.5 * bendingForce.x));
-        InterlockedAdd(hairNodeBuffer[currIndex - 1].ay, -(int)(floatToInt * 0.5 * bendingForce.y));
-        InterlockedAdd(hairNodeBuffer[currIndex - 1].az, -(int)(floatToInt * 0.5 * bendingForce.z));
+        InterlockedAdd(hairNodeBuffer[currIndex - 1].ax, -(int)(floatToInt * 0.5 * bendingForce.x / hairNodeBuffer[currIndex - 1].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex - 1].ay, -(int)(floatToInt * 0.5 * bendingForce.y / hairNodeBuffer[currIndex - 1].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex - 1].az, -(int)(floatToInt * 0.5 * bendingForce.z / hairNodeBuffer[currIndex - 1].mass));
     }
 
     // update current node force, also adding gravity to the y direction.
-    InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * (springForce.x + bendingForce.x)));
-    InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * (springForce.y + bendingForce.y - gravity)));
-    InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * (springForce.z + bendingForce.z)));
+    InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * (springForce.x + bendingForce.x) / hairNodeBuffer[currIndex].mass ));
+    InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * (springForce.y + bendingForce.y - gravity * hairNodeBuffer[currIndex].mass) / hairNodeBuffer[currIndex].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * (springForce.z + bendingForce.z) / hairNodeBuffer[currIndex].mass));
 
     // update next node force
-    InterlockedAdd(hairNodeBuffer[currIndex + 1].ax, (int)(floatToInt * (-springForce.x - 0.5 * bendingForce.x)));
-    InterlockedAdd(hairNodeBuffer[currIndex + 1].ay, (int)(floatToInt * (-springForce.y - 0.5 * bendingForce.y)));
-    InterlockedAdd(hairNodeBuffer[currIndex + 1].az, (int)(floatToInt * (-springForce.z - 0.5 * bendingForce.z)));
+    InterlockedAdd(hairNodeBuffer[currIndex + 1].ax, (int)(floatToInt * (-springForce.x - 0.5 * bendingForce.x) / hairNodeBuffer[currIndex + 1].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex + 1].ay, (int)(floatToInt * (-springForce.y - 0.5 * bendingForce.y) / hairNodeBuffer[currIndex + 1].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex + 1].az, (int)(floatToInt * (-springForce.z - 0.5 * bendingForce.z) / hairNodeBuffer[currIndex + 1].mass));
 
     // ------------------- calculating the right node -----------------------
     dX = 0; 
@@ -146,20 +146,20 @@ void ForceKernel(uint3 id : SV_DispatchThreadID)
         float3 currLeft = float3(leftNode.x - curr.x, leftNode.y - curr.y, leftNode.z - curr.z);
         bendingForce = bendingStiffness * (currRight + currLeft);
 
-        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].ax, -(int)(floatToInt * 0.5 * bendingForce.x));
-        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].ay, -(int)(floatToInt * 0.5 * bendingForce.y));
-        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].az, -(int)(floatToInt * 0.5 * bendingForce.z));
+        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].ax, -(int)(floatToInt * 0.5 * bendingForce.x / hairNodeBuffer[currIndex - nNodesPerHair].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].ay, -(int)(floatToInt * 0.5 * bendingForce.y / hairNodeBuffer[currIndex - nNodesPerHair].mass));
+        InterlockedAdd(hairNodeBuffer[currIndex - nNodesPerHair].az, -(int)(floatToInt * 0.5 * bendingForce.z / hairNodeBuffer[currIndex - nNodesPerHair].mass));
     }
 
     // update current node force.
-    InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * (springForce.x + bendingForce.x)));
-    InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * (springForce.y + bendingForce.y)));
-    InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * (springForce.z + bendingForce.z)));
+    InterlockedAdd(hairNodeBuffer[currIndex].ax, (int)(floatToInt * (springForce.x + bendingForce.x) / hairNodeBuffer[currIndex].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex].ay, (int)(floatToInt * (springForce.y + bendingForce.y) / hairNodeBuffer[currIndex].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex].az, (int)(floatToInt * (springForce.z + bendingForce.z) / hairNodeBuffer[currIndex].mass));
 
     // update next node force
-    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].ax, (int)(floatToInt * (-springForce.x - 0.5 * bendingForce.x)));
-    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].ay, (int)(floatToInt * (-springForce.y - 0.5 * bendingForce.y)));
-    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].az, (int)(floatToInt * (-springForce.z - 0.5 * bendingForce.z)));
+    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].ax, (int)(floatToInt * (-springForce.x - 0.5 * bendingForce.x) / hairNodeBuffer[currIndex + nNodesPerHair].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].ay, (int)(floatToInt * (-springForce.y - 0.5 * bendingForce.y) / hairNodeBuffer[currIndex + nNodesPerHair].mass));
+    InterlockedAdd(hairNodeBuffer[currIndex + nNodesPerHair].az, (int)(floatToInt * (-springForce.z - 0.5 * bendingForce.z) / hairNodeBuffer[currIndex + nNodesPerHair].mass));
 }
 
 

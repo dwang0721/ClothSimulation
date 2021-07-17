@@ -23,6 +23,7 @@ public class CPU3D: MonoBehaviour
     public ComputeShader shader;    
     public GameObject hairPrefab, colliderPrefab;
     public Lamp theLamp;
+    public Texture2D weightMap;
     //GameObject currentSelectedCollider;
 
     static public int res;
@@ -70,6 +71,13 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(hairPrefab);
         Debug.Assert(colliderPrefab);
         Debug.Assert(theLamp);
+        Debug.Assert(weightMap);
+        //Debug.Log(0.1 + ", " + 0.1 + ": " + weightMap.GetPixelBilinear(0.1f, 0.1f).grayscale);
+        //Debug.Log(0.0 + ", " + 0.0 + ": " + weightMap.GetPixelBilinear(0.0f, 0.0f).grayscale);
+        //Debug.Log(0.9 + ", " + 0.9 + ": " + weightMap.GetPixelBilinear(0.9f, 0.9f).grayscale);
+        //Debug.Log(0.1 + ", " + 0.9 + ": " + weightMap.GetPixelBilinear(0.1f, 0.9f).grayscale);
+        //Debug.Log(0.9 + ", " + 0.1 + ": " + weightMap.GetPixelBilinear(0.9f, 0.1f).grayscale);
+        //Debug.Log(0.5 + ", " + 0.5 + ": " + weightMap.GetPixelBilinear(0.5f, 0.5f).grayscale);
 
         //initData();
         initGeo();
@@ -113,6 +121,7 @@ public class CPU3D: MonoBehaviour
         headPos = theLamp.head.transform.position;
         headLookAtPos = theLamp.headLookAt;
 
+        // nodes data
         for (int i = 0; i < nHairs; i++)
         {
             for (int j = 0; j < nNodesPerHair; j++)
@@ -127,6 +136,11 @@ public class CPU3D: MonoBehaviour
                 hairNodesArray[nodeIndex].ax = 0;
                 hairNodesArray[nodeIndex].ay = 0;
                 hairNodesArray[nodeIndex].az = 0;
+
+                // sample the weight from the weight map
+                float u = i * 1.0f / (nHairs);
+                float v = 1.0f - j * 1.0f / (nNodesPerHair);                
+                hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;              
             }                
         }
 
