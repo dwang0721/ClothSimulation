@@ -72,12 +72,6 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(colliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
-        //Debug.Log(0.1 + ", " + 0.1 + ": " + weightMap.GetPixelBilinear(0.1f, 0.1f).grayscale);
-        //Debug.Log(0.0 + ", " + 0.0 + ": " + weightMap.GetPixelBilinear(0.0f, 0.0f).grayscale);
-        //Debug.Log(0.9 + ", " + 0.9 + ": " + weightMap.GetPixelBilinear(0.9f, 0.9f).grayscale);
-        //Debug.Log(0.1 + ", " + 0.9 + ": " + weightMap.GetPixelBilinear(0.1f, 0.9f).grayscale);
-        //Debug.Log(0.9 + ", " + 0.1 + ": " + weightMap.GetPixelBilinear(0.9f, 0.1f).grayscale);
-        //Debug.Log(0.5 + ", " + 0.5 + ": " + weightMap.GetPixelBilinear(0.5f, 0.5f).grayscale);
 
         //initData();
         initGeo();

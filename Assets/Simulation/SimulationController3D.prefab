@@ -43,9 +43,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe793fee3a516974eb58c93ece0201df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shader: {fileID: 7200000, guid: 20578fa649de68c438e1ddd1fd7a31a6, type: 3}
+  shader: {fileID: 7200000, guid: 7f3099d2c2f308e49a922d4e8bc86bb4, type: 3}
   hairPrefab: {fileID: 7765864190364122376, guid: 75b2e3a4bfdf72f4d9718223c8f5ea2a,
     type: 3}
   colliderPrefab: {fileID: 7765864190364122376, guid: 60ca314bd66c5ec4c86f055416d9129b,
     type: 3}
-  mainCamera: {fileID: 0}
+  theLamp: {fileID: 0}
+  weightMap: {fileID: 2800000, guid: 4b3150ce1d05aa54aa0bad11f0ec85ab, type: 3}

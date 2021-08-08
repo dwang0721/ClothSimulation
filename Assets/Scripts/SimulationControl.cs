@@ -6,7 +6,9 @@ using UnityEngine.UI;
 public class SimulationControl : MonoBehaviour
 {
     public CPU3D simulationController3D;
+    public OptMethod simulationOptMethodController;
     public Lamp theLamp;
+    public LampOptMethod theLampOptMethod;
     Slider SliderStiffness, SliderGravity, SliderDistance, SliderMaxTravel, SliderBendingStiffness, SliderFriction;
     Slider LightIntensity, LightAngle;
     
@@ -34,6 +36,11 @@ public class SimulationControl : MonoBehaviour
         LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value); });
         LightAngle.onValueChanged.AddListener(delegate { simulationController3D.updatelightAngle(LightAngle.value); });
         LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
+
+        //LightIntensity.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightForce(LightIntensity.value); });
+        LightIntensity.onValueChanged.AddListener(delegate { theLampOptMethod.setLightColor(LightIntensity.value); });
+        //LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
+        LightAngle.onValueChanged.AddListener(delegate { theLampOptMethod.setViewingAngle(LightAngle.value); });
 
         initSliders();
     }
