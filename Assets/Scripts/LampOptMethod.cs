@@ -114,7 +114,7 @@ public class LampOptMethod : MonoBehaviour
 
     void updateLightSimulation()
     {
-        simulationOptMethod.updateLightSettings(head.transform.position, headLookAt);
+        simulationOptMethod.updateLightLooAtSettings(head.transform.position, headLookAt);
     }
 
     public void setViewingAngle(float angle)

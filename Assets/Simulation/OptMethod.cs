@@ -1,10 +1,18 @@
-// https://www.alglib.net/translator/man/manual.csharp.html#sub_spdmatrixcholesky
+// Math Library
+// https://numerics.mathdotnet.com/
+
+// Math Plugin: https://github.com/GlitchEnzo/NuGetForUnity, following the steps to install MathNet:
+// 1. add the NugetForUnity.unitypackage to your Unity Project.
+// 2. Open the NuGet > Manage NuGet Packages Window.
+// 3. Search the MathNet.Numerics and install.
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
 
-// AoS
+// GPU method Data struct
 public struct ClothNode
 {
     public float x, y, z;
@@ -13,12 +21,20 @@ public struct ClothNode
     public float mass;
 }
 
-// SoA
+// For CPU method
 public struct ClothNodesAttrArray
 {
     public Vector3 [,] pos;
     public Vector3 [,] vel;
     public Vector3 [,] acc;
+}
+
+// For Matrix method
+public struct ClothNodeMatrix
+{
+    Matrix<double> x, y, z;
+    Matrix<double> vx, vy, vz;
+    Matrix<double> ax, ay, az;
 }
 
 public class OptMethod : MonoBehaviour
@@ -68,6 +84,7 @@ public class OptMethod : MonoBehaviour
     {
         tickSimulation(1);
         updateClothVertexPositions();
+        //explicitMatrixSimulationMethod();
     }
 
     void initData()
@@ -102,7 +119,7 @@ public class OptMethod : MonoBehaviour
         {
             for (int j = 0; j < nNodesPerHair; j++)
             {
-                // AoS
+                // AoS GPU method Data struct
                 int nodeIndex = i * nNodesPerHair + j;
                 clothNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
                 clothNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
@@ -114,7 +131,7 @@ public class OptMethod : MonoBehaviour
                 clothNodesArray[nodeIndex].ay = 0;
                 clothNodesArray[nodeIndex].az = 0;
 
-                // SoA
+                // SoA CPU method Data struct
                 clothAttrsArray.pos[i, j].x = nodeDistance * (i - nHairs / 2);
                 clothAttrsArray.pos[i, j].y = -nodeDistance * (j - nNodesPerHair / 2);
                 clothAttrsArray.pos[i, j].z = 0.0f;
@@ -191,11 +208,36 @@ public class OptMethod : MonoBehaviour
     {
         for (int i = 0; i < simulationSteps; i++)
         {
+            // do it in dynaic way, so that we don't have to thru all iterations to reach destinations.
             explicitEuler_tickVel();
             explicitEuler_tickForce();
+            explicitEuler_tickLight();
             explicitEuler_tickIntegration();
+            // difference is small quit iteration. adjustment is small, quit. 
+            // skip nodes. 
+            // check if it should continue. 
+            // define what is close?
+            // do it linear 
+            // integration may oscillate. Detect error/ oscillate, in the code, 
+            // analysis, understand the relation to localGlobalSimulationMethod(); 
         }
-        return;
+    }
+
+    void explicitMatrixSimulationMethod()
+    {
+        Matrix<double> A = DenseMatrix.OfArray(new double[,] {  {1,1,1,1},
+                                                                {1,2,3,4},
+                                                                {4,3,2,1}   });
+
+        Matrix<double> B = DenseMatrix.OfArray(new double[,] {  {-1,-1,-1,-1},
+                                                                {1,2,3,4},
+                                                                {-4,-3,-2,-1}   });
+
+        Debug.Log(A + B);
+
+        //Vector3[,] c = new Vector3[,] {  {new Vector3(1,1,1), new Vector3(2,2,2)},
+        //                                 {new Vector3(1,1,1), new Vector3(2,2,2)} };
+        //Matrix<Vector3> C = c;
     }
 
     void GPUSimulationMethod()
@@ -211,10 +253,7 @@ public class OptMethod : MonoBehaviour
             for (int j = 0; j < nNodesPerHair - 1; j++)
             {
                 // spring force
-                Vector3 currNext = new Vector3( clothAttrsArray.pos[i, j + 1].x - clothAttrsArray.pos[i, j].x,
-                                                clothAttrsArray.pos[i, j + 1].y - clothAttrsArray.pos[i, j].y,
-                                                clothAttrsArray.pos[i, j + 1].z - clothAttrsArray.pos[i, j].z);
-
+                Vector3 currNext = clothAttrsArray.pos[i, j + 1] - clothAttrsArray.pos[i, j];
                 float dX = Mathf.Clamp(nodeDistance - currNext.magnitude, -maxTravelDistance, maxTravelDistance);
                 Vector3 springForce = -stiffness * currNext.normalized * dX;
 
@@ -222,10 +261,7 @@ public class OptMethod : MonoBehaviour
                 Vector3 bendingForce = new Vector3(0.0f, 0.0f, 0.0f);
 
                 if (j != 0) {
-                    Vector3 currPrev = new Vector3( clothAttrsArray.pos[i, j - 1].x - clothAttrsArray.pos[i, j].x,
-                                                    clothAttrsArray.pos[i, j - 1].y - clothAttrsArray.pos[i, j].y,
-                                                    clothAttrsArray.pos[i, j - 1].z - clothAttrsArray.pos[i, j].z);
-
+                    Vector3 currPrev = clothAttrsArray.pos[i, j - 1] - clothAttrsArray.pos[i, j];
                     bendingForce = bendingStiffness * (currNext + currPrev);
                     clothAttrsArray.acc[i, j - 1] -= 0.5f * bendingForce;
                 }
@@ -246,14 +282,8 @@ public class OptMethod : MonoBehaviour
         {
             for (int j = 0; j < nNodesPerHair - 1; j++)
             {
-                Vector3 relativePos = new Vector3(  clothAttrsArray.pos[i, j + 1].x - clothAttrsArray.pos[i, j].x,
-                                                    clothAttrsArray.pos[i, j + 1].y - clothAttrsArray.pos[i, j].y,
-                                                    clothAttrsArray.pos[i, j + 1].z - clothAttrsArray.pos[i, j].z);
-
-                Vector3 relativeVel = new Vector3(  clothAttrsArray.vel[i, j + 1].x - clothAttrsArray.vel[i, j].x,
-                                                    clothAttrsArray.vel[i, j + 1].y - clothAttrsArray.vel[i, j].y,
-                                                    clothAttrsArray.vel[i, j + 1].z - clothAttrsArray.vel[i, j].z);
-
+                Vector3 relativePos = clothAttrsArray.pos[i, j + 1] - clothAttrsArray.pos[i, j];
+                Vector3 relativeVel = clothAttrsArray.vel[i, j + 1] - clothAttrsArray.vel[i, j];
                 Vector3 tangentVel = Vector3.Dot(relativeVel, relativePos.normalized) * relativePos.normalized;
                 Vector3 verticalVel = relativeVel - tangentVel;
                 Vector3 exVel = 0.005f * tangentVel + 0.001f * verticalVel;
@@ -297,12 +327,39 @@ public class OptMethod : MonoBehaviour
     }
     void explicitEuler_tickLight()
     {
+        for (int i = 0; i < nHairs; i++)
+        {
+            for (int j = 0; j < nNodesPerHair; j++)
+            {
+                Vector3 lookAtDir = (headLookAtPos - headPos).normalized;
+                Vector3 lightDir = (clothAttrsArray.pos[i, j] - headPos).normalized;
 
+                float dotValue = Vector3.Dot(lookAtDir, lightDir);
+                Vector3 lightForceVector = lightDir * lightForce;
+
+                if (dotValue > Mathf.Cos(lightAngle * 0.0174533f * 0.5f))
+                {
+                    clothAttrsArray.acc[i, j] += lightForceVector; 
+                }
+            }
+        }
     }
 
-    public void updateLightSettings(Vector3 lightHeadPos, Vector3 lightHeadLootAt)
+    public void updateLightLooAtSettings(Vector3 lightHeadPos, Vector3 lightHeadLootAt)
     {
         headPos = lightHeadPos;
         headLookAtPos = lightHeadLootAt;
+    }
+
+    public void updatelightForce(float f)
+    {
+        //shader.SetFloat("lightForce", lightForce);
+        lightForce = f;
+    }
+
+    public void updatelightAngle(float a)
+    {
+        //shader.SetFloat("lightAngle", lightAngle);
+        lightAngle = a;
     }
 }

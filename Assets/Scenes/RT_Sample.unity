@@ -3291,25 +3291,6 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 571298407598839919, guid: ebcb2a06f1042a74d9727c64c1037ae0, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: ebcb2a06f1042a74d9727c64c1037ae0, type: 3}
---- !u!114 &2576117981725243616
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4470571736611588330}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86d178dc5f6a3cd4b9370c3a32138822, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  simulation: {fileID: 248747741}
-  tumbleSpeed: 10
-  lightMaterial: {fileID: 2100000, guid: b88a31213d48e0c4d8e644861f2f42bc, type: 2}
-  head: {fileID: 8507689306117271645}
-  headLookAt: {x: 0, y: 0, z: 0}
-  lineSegmentPrefab: {fileID: 2315126045038764629, guid: b68065b2ffdfeca48a6c750861228ddd,
-    type: 3}
 --- !u!64 &2977386383273847857
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -3515,7 +3496,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5769851138689649675}
-  - component: {fileID: 2576117981725243616}
   - component: {fileID: 4470571736611588331}
   m_Layer: 0
   m_Name: LampOptimizationMehod
@@ -3536,7 +3516,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1d7d60e13a1382438c65e473b0d08d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  simulation: {fileID: 4333655}
+  simulationOptMethod: {fileID: 4333655}
   tumbleSpeed: 10
   lightMaterial: {fileID: 2100000, guid: b88a31213d48e0c4d8e644861f2f42bc, type: 2}
   head: {fileID: 8507689306117271645}
