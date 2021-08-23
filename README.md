@@ -6,7 +6,7 @@ A code base for experimenting Cloth Simulation.
 
 ## Math Library Dependency
 Math Plugin: https://github.com/GlitchEnzo/NuGetForUnity, following the steps to install MathNet:
-1. add the NugetForUnity.unitypackage to your Unity Project.
+1. add the NugetForUnity.unitypackage [https://github.com/GlitchEnzo/NuGetForUnity/releases] to your Unity Project.
 2. Open the NuGet > Manage NuGet Packages Window.
 3. Search the MathNet.Numerics and install.
 
