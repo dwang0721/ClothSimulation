@@ -158,6 +158,7 @@ MonoBehaviour:
     type: 3}
   theLamp: {fileID: 4470571736611588331}
   weightMap: {fileID: 2800000, guid: 4618124f4785e6d4783fa8f19d58e331, type: 3}
+  simulationMode: 2
 --- !u!4 &4333656
 Transform:
   m_ObjectHideFlags: 0
@@ -3503,7 +3504,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &4470571736611588331
 MonoBehaviour:
   m_ObjectHideFlags: 0

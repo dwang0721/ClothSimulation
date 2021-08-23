@@ -6,11 +6,18 @@
 // 2. Open the NuGet > Manage NuGet Packages Window.
 // 3. Search the MathNet.Numerics and install.
 
+// Mass-Spring System Solver
+// https://github.com/alecjacobson/computer-graphics-mass-spring-systems?fbclid=IwAR1rxSAUgD4SzL6UOU4WBMKNZ8Rx5aKF-nNmpZ_Gx4w_fDHtckS-fKSXP6A
+// 
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+
+public enum Selection { GPU, CPU, LocalGlobal };
 
 // GPU method Data struct
 public struct ClothNode
@@ -29,29 +36,59 @@ public struct ClothNodesAttrArray
     public Vector3 [,] acc;
 }
 
-// For Matrix method
-public struct ClothNodeMatrix
+// for Implicit Euler
+public struct SpringConstraint
 {
-    Matrix<double> x, y, z;
-    Matrix<double> vx, vy, vz;
-    Matrix<double> ax, ay, az;
+    // Spring constraints is for each spring, it is connected to two vertices, m_v1 and m_v2.
+    public int m_v1, m_v2; 
+    public float ks;
+}
+
+public struct PinConstraint
+{
+    // pin constraint is for each pinned vertex.
+    public int m_v0;
+}
+
+public struct ClothSimulation
+{
+    public Matrix<double> rest_p; // 3m x 1
+    public Matrix<double> prev_p; // 3m x 1
+    public Matrix<double> curr_p; // 3m x 1
+
+    public Matrix<double> inertia_y; // 3m x 1, y = 2 * curr_pos - prev_pos. 
+    public Matrix<double> mass_matrix; // 3m x 3m, M with mass along the diagonal line. 
+    public Matrix<double> external_force; // 3m x 1, F= ma, 
+    public Matrix<double> gravity_force; // 3m x 1, F= -mg, external_force[3*i+1] is where gravity should apply
+
+    public Matrix<double> l_matrix; // 3m x 3m
+    public Matrix<double> j_matrix; // 3m x 3s
+
+    public SpringConstraint[] springConstraint; // s, the number of springs
+    public PinConstraint[] pinConstraint; // number of pinned vertices
 }
 
 public class OptMethod : MonoBehaviour
 {
+    // stuff can be seen from the UI
     public GameObject hairPrefab, colliderPrefab;
     public LampOptMethod theLamp;
     public Texture2D weightMap;
+    public Selection simulationMode = Selection.LocalGlobal;
 
-    static public int simulationSteps;
-    public static int nHairs, nNodesPerHair;
-
-    // array of ClothNode Struts, Object Oriented design.
+    // GPU Method Data Structure.
     static ClothNode[] clothNodesArray;
     static GameObject[] clothVertArray;
 
-    // ClothNodesAttrArray
-    ClothNodesAttrArray clothAttrsArray; 
+    // CPU Method Data Structure.
+    ClothNodesAttrArray clothAttrsArray;
+
+    // Implicit Method Data Structure.
+    static ClothSimulation clothSim;
+
+    static public int simulationSteps;
+    static public int nHairs, nNodesPerHair, nEdges;
+    static public float steph;
 
     public static float nodeDistance;
     static float dPosition;             // speed ratio for euler's method
@@ -77,14 +114,14 @@ public class OptMethod : MonoBehaviour
     void Start()
     {
         initGeo();
+        //codeMatrixExample();
     }
 
     // Update is called once per frame
     void Update()
     {
-        tickSimulation(1);
+        tickSimulation();
         updateClothVertexPositions();
-        //explicitMatrixSimulationMethod();
     }
 
     void initData()
@@ -92,16 +129,8 @@ public class OptMethod : MonoBehaviour
         simulationSteps = 40;
 
         // hair nodes
-        nHairs = 32;
-        nNodesPerHair = 32;
-
-        // cloth Node
-        clothNodesArray = new ClothNode[nHairs * nNodesPerHair];
-
-        //cloth NodeList
-        clothAttrsArray.pos = new Vector3 [nHairs, nNodesPerHair];
-        clothAttrsArray.vel = new Vector3 [nHairs, nNodesPerHair];
-        clothAttrsArray.acc = new Vector3 [nHairs, nNodesPerHair];
+        nHairs = 1;
+        nNodesPerHair = 2;
 
         // simulation variables
         nodeDistance = 0.5f;    // Initial Node distance apart.
@@ -114,39 +143,115 @@ public class OptMethod : MonoBehaviour
         maxTravelDistance = 5.0f;
         bendingStiffness = 0.1f;
 
-        // an Array of Node struct
+        // initialize empty data structures
+        switch (simulationMode)
+        {
+            case Selection.GPU:
+                clothNodesArray = new ClothNode[nHairs * nNodesPerHair];
+                break;
+            case Selection.CPU:
+                //cloth NodeList
+                clothAttrsArray.pos = new Vector3[nHairs, nNodesPerHair];
+                clothAttrsArray.vel = new Vector3[nHairs, nNodesPerHair];
+                clothAttrsArray.acc = new Vector3[nHairs, nNodesPerHair];
+                break;
+            case Selection.LocalGlobal:
+                // implementation here
+                nHairs = 2;
+                nNodesPerHair = 1;
+                nEdges = 1;
+                steph = 1.0f;
+                nodeDistance = 10;
+                stiffness = 0.01f;
+                gravity = 0.1f;
+                clothSim.springConstraint = new SpringConstraint[nEdges];
+                clothSim.pinConstraint = new PinConstraint[1];
+                break;
+        }
+
+        // fill data to Cloth Node Data structures
+        int nodeIndex;
+        double[] temp_p = new double[nHairs * nNodesPerHair * 3];
         for (int i = 0; i < nHairs; i++)
         {
             for (int j = 0; j < nNodesPerHair; j++)
-            {
-                // AoS GPU method Data struct
-                int nodeIndex = i * nNodesPerHair + j;
-                clothNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
-                clothNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
-                clothNodesArray[nodeIndex].z = 0.0f;
-                clothNodesArray[nodeIndex].vx = 0.0f;
-                clothNodesArray[nodeIndex].vy = 0.0f;
-                clothNodesArray[nodeIndex].vz = 0.0f;
-                clothNodesArray[nodeIndex].ax = 0;
-                clothNodesArray[nodeIndex].ay = 0;
-                clothNodesArray[nodeIndex].az = 0;
+            {                
+                switch (simulationMode)
+                {
+                    case Selection.GPU:
+                        nodeIndex = i * nNodesPerHair + j;
+                        clothNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
+                        clothNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
+                        clothNodesArray[nodeIndex].z = 0.0f;
+                        clothNodesArray[nodeIndex].vx = 0.0f;
+                        clothNodesArray[nodeIndex].vy = 0.0f;
+                        clothNodesArray[nodeIndex].vz = 0.0f;
+                        clothNodesArray[nodeIndex].ax = 0;
+                        clothNodesArray[nodeIndex].ay = 0;
+                        clothNodesArray[nodeIndex].az = 0;
 
-                // SoA CPU method Data struct
-                clothAttrsArray.pos[i, j].x = nodeDistance * (i - nHairs / 2);
-                clothAttrsArray.pos[i, j].y = -nodeDistance * (j - nNodesPerHair / 2);
-                clothAttrsArray.pos[i, j].z = 0.0f;
-                clothAttrsArray.vel[i, j].x = 0.0f;
-                clothAttrsArray.vel[i, j].y = 0.0f;
-                clothAttrsArray.vel[i, j].z = 0.0f;
-                clothAttrsArray.acc[i, j].x = 0.0f;
-                clothAttrsArray.acc[i, j].y = 0.0f;
-                clothAttrsArray.acc[i, j].z = 0.0f;
+                        // sample the weight from the weight map
+                        float u = i * 1.0f / (nHairs);
+                        float v = 1.0f - j * 1.0f / (nNodesPerHair);
+                        clothNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
 
-                // sample the weight from the weight map
-                float u = i * 1.0f / (nHairs);
-                float v = 1.0f - j * 1.0f / (nNodesPerHair);
-                clothNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
+                        break;
+                    case Selection.CPU:
+                        // SoA CPU method Data struct
+                        clothAttrsArray.pos[i, j] = new Vector3(nodeDistance * (i - nHairs / 2), -nodeDistance * (j - nNodesPerHair / 2), 0.0f);
+                        clothAttrsArray.vel[i, j] = new Vector3(0.0f, 0.0f, 0.0f);
+                        clothAttrsArray.acc[i, j] = new Vector3(0.0f, 0.0f, 0.0f);
+                        break;
+                    case Selection.LocalGlobal:
+                        // implementation here
+                        nodeIndex = i * nNodesPerHair + j;
+
+                        temp_p[3 * i] =  nodeDistance * (i - nHairs / 2);
+                        temp_p[3 * i + 1] = -nodeDistance * (j - nNodesPerHair / 2);
+                        temp_p[3 * i + 2] = 0.0f;
+                        break;
+                }
             }
+        }
+
+
+
+        // filling Constraint Data Struct
+        if (simulationMode == Selection.LocalGlobal)
+        {
+            // initialize clothMeshMatrix 
+            clothSim.rest_p = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, temp_p);
+            clothSim.prev_p = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, temp_p);
+            clothSim.curr_p = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, temp_p);
+            clothSim.inertia_y = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, temp_p);
+            clothSim.mass_matrix = Matrix<double>.Build.DenseDiagonal(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 1.0f);
+            clothSim.external_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
+            clothSim.gravity_force = buildGravityMatrix(gravity, nHairs * nNodesPerHair);
+            clothSim.l_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 0.0f);
+            clothSim.j_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nEdges * 3, 0.0f);
+
+            // one spring
+            clothSim.springConstraint[0].m_v1 = 0;
+            clothSim.springConstraint[0].m_v2 = 1;
+            clothSim.springConstraint[0].ks = stiffness;
+
+            clothSim.pinConstraint[0].m_v0 = 0;
+
+            // second spring
+            //clothSim.springConstraint[1].m_v1 = 1;
+            //clothSim.springConstraint[1].m_v2 = 2;
+            //clothSim.springConstraint[1].ks = stiffness;
+
+            // third spring
+            //clothSim.springConstraint[2].m_v1 = 2;
+            //clothSim.springConstraint[2].m_v2 = 3;
+            //clothSim.springConstraint[2].ks = stiffness;
+
+            //clothSim.springConstraint[3].m_v1 = 3;
+            //clothSim.springConstraint[3].m_v2 = 4;
+            //clothSim.springConstraint[3].ks = stiffness;
+
+            //clothSim.pinConstraint[1].m_v0 = 2;
         }
     }
 
@@ -154,44 +259,87 @@ public class OptMethod : MonoBehaviour
     {
         // instantiate hair objects
         clothVertArray = new GameObject[nHairs * nNodesPerHair];
-        for (int i = 0; i < clothVertArray.Length; i++)
+        switch (simulationMode)
         {
-            Vector3 location = new Vector3(clothNodesArray[i].x, clothNodesArray[i].y, clothNodesArray[i].z);
-            var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
-            clothVertArray[i] = newitem;
+            case Selection.GPU:
+                for (int i = 0; i < clothVertArray.Length; i++)
+                {
+                    Vector3 location = new Vector3(clothNodesArray[i].x, clothNodesArray[i].y, clothNodesArray[i].z);
+                    var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
+                    clothVertArray[i] = newitem;
+                }
+                break;
+            case Selection.CPU:
+                for (int i = 0; i < nHairs; i++)
+                {
+                    for (int j = 0; j < nNodesPerHair; j++)
+                    {
+                        Vector3 location = clothAttrsArray.pos[i, j];
+                        var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
+                        clothVertArray[i * nNodesPerHair + j] = newitem;
+                    }
+                }
+                break;
+            case Selection.LocalGlobal:
+                // your implementation here
+                for (int i = 0; i < nHairs * nNodesPerHair; i++)
+                {
+                    Vector3 location = new Vector3(Convert.ToSingle(clothSim.curr_p.At(3 * i, 0)),
+                                                   Convert.ToSingle(clothSim.curr_p.At(3 * i + 1, 0)),
+                                                   Convert.ToSingle(clothSim.curr_p.At(3 * i + 2, 0)));
+                    GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
+                    newitem.transform.localScale = new Vector3(2, 2, 2);
+                    clothVertArray[i] = newitem;
+                }
+                break;
         }
+
     }
 
     void updateClothVertexPositions()
     {
         for (int i = 0; i < nHairs; i++)
         {
-            for (int j = 0; j < nNodesPerHair; j++) 
+            for (int j = 0; j < nNodesPerHair; j++)
             {
-                clothVertArray[i*nNodesPerHair + j].transform.position = clothAttrsArray.pos[i, j];
+                switch (simulationMode)
+                {
+                    case Selection.GPU:
+                        // implementation
+                        break;
+                    case Selection.CPU:
+                        clothVertArray[i * nNodesPerHair + j].transform.position = clothAttrsArray.pos[i, j];
+                        break;
+                    case Selection.LocalGlobal:
+                        // implementation
+                        int nodeIndex = i * nNodesPerHair + j;
+                        clothVertArray[nodeIndex].transform.position = new Vector3(Convert.ToSingle(clothSim.curr_p.At(3 * nodeIndex, 0)),
+                                                                                   Convert.ToSingle(clothSim.curr_p.At(3 * nodeIndex + 1, 0)),
+                                                                                   Convert.ToSingle(clothSim.curr_p.At(3 * nodeIndex + 2, 0)));
+                        break;
+                }                
             }
         }
     }
 
-    void tickSimulation(int simulationIndex)
+    void tickSimulation()
     {
-        switch (simulationIndex)
+        switch (simulationMode)
         {
-            case 1:
+            case Selection.GPU:
+                GPUSimulationMethod();
+                break;
+            case Selection.CPU:
                 explicitEulerSimulationMethod();
                 // p [matrix of vector3 # of nodes I have] = p+v*h
                 // v = v+ a*m
                 // for every node. 
                 break;
-            case 2:
+            case Selection.LocalGlobal:
                 localGlobalSimulationMethod();
                 // finish implementation? understand what is going on here
                 // Expectation: continue this research. 
                 // by early fall, be able 
-                
-                break;
-            case 3:
-                GPUSimulationMethod();
                 break;
             default:
                 Debug.Log("Unknown Simulation Method!");
@@ -201,18 +349,162 @@ public class OptMethod : MonoBehaviour
 
     void localGlobalSimulationMethod()
     {
+        // Step1 CalculateInteria component y = 2 * P_current - P_previous
+        LocalGlobal_updateInertiaY();
+        // Debug.Log(clothSim.inertia_y);
+
+        // Step2 build External Force Vector
+        LocalGlobal_updateExternalForce();
+        Debug.Log(clothSim.external_force);
+
+        // Calculate L matrix
+        LocalGlobal_updateLaplacian();
+        Debug.Log(clothSim.l_matrix);
+
+        // Calculate J matrix
+        LocalGlobal_updateJMatrix();
+        //Debug.Log(clothSim.j_matrix);
+
+        // Calculate Pinned constraint CT * C
+        Matrix<double> CTC = LocalGlobal_evaluate_CTC(10000000);
+        //Debug.Log(CTC);
+
+        // evaluate Q = M + h^2 * L        
+        Matrix<double> Q = clothSim.mass_matrix + (clothSim.l_matrix + CTC) * steph * steph;
+        //Debug.Log(Q);
+
+        // evaluate d
+        Matrix<double> d = LocalGlobal_evaluate_d();
+
+        // calculate b = M * y + (f + J * d ) * h^2
+        Matrix<double> b = clothSim.mass_matrix * clothSim.inertia_y + (clothSim.external_force + clothSim.j_matrix * d + CTC * clothSim.rest_p) * steph * steph;
+        //Debug.Log(clothSim.rest_p);
+
+        // solve equation Q p = b
+        Matrix<double> next_p = Q.Solve(b);
+
+        // upgrade current, previous position. next_p.SetSubMatrix(0, 3, 0, 1, clothSim.rest_p.SubMatrix(0, 3, 0, 1));
+        clothSim.prev_p = clothSim.curr_p;
+        clothSim.curr_p = next_p;
+
+        // Debug.Log(clothSim.curr_p);
+
+        // calculating damping
+
         return;
+    }
+
+    void LocalGlobal_updateInertiaY()
+    {
+        //y = 2 * curr_pos - prev_pos.
+        clothSim.inertia_y = clothSim.curr_p + (clothSim.curr_p - clothSim.prev_p) * 0.1f;
+    }
+
+    void LocalGlobal_updateExternalForce()
+    {
+        clothSim.external_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
+        clothSim.gravity_force = buildGravityMatrix(gravity, nHairs * nNodesPerHair);
+        clothSim.external_force = clothSim.external_force + clothSim.gravity_force;
+        clothSim.external_force = clothSim.mass_matrix * clothSim.external_force;
+        //Debug.Log(clothSim.external_force);
+    }
+
+    void LocalGlobal_updateLaplacian()
+    {
+        // L is 3m * 3m size
+        double sk = Convert.ToDouble(stiffness);
+        Tuple<int, int, double>[] L = new Tuple<int, int, double>[12 * clothSim.springConstraint.Length];
+        for (int i = 0; i < clothSim.springConstraint.Length; i++)
+        {
+            SpringConstraint s = clothSim.springConstraint[i];
+            L[12 * i + 0] = Tuple.Create(3 * s.m_v1 + 0, 3 * s.m_v1 + 0, sk);
+            L[12 * i + 1] = Tuple.Create(3 * s.m_v1 + 1, 3 * s.m_v1 + 1, sk);
+            L[12 * i + 2] = Tuple.Create(3 * s.m_v1 + 2, 3 * s.m_v1 + 2, sk);
+
+            L[12 * i + 3] = Tuple.Create(3 * s.m_v1 + 0, 3 * s.m_v2 + 0, -sk);
+            L[12 * i + 4] = Tuple.Create(3 * s.m_v1 + 1, 3 * s.m_v2 + 1, -sk);
+            L[12 * i + 5] = Tuple.Create(3 * s.m_v1 + 2, 3 * s.m_v2 + 2, -sk);
+
+            L[12 * i + 6] = Tuple.Create(3 * s.m_v2 + 0, 3 * s.m_v1 + 0, -sk);
+            L[12 * i + 7] = Tuple.Create(3 * s.m_v2 + 1, 3 * s.m_v1 + 1, -sk);
+            L[12 * i + 8] = Tuple.Create(3 * s.m_v2 + 2, 3 * s.m_v1 + 2, -sk);
+
+            L[12 * i + 9] = Tuple.Create(3 * s.m_v2 + 0, 3 * s.m_v2 + 0, sk);
+            L[12 * i + 10] = Tuple.Create(3 * s.m_v2 + 1, 3 * s.m_v2 + 1, sk);
+            L[12 * i + 11] = Tuple.Create(3 * s.m_v2 + 2, 3 * s.m_v2 + 2, sk);
+        }
+
+        clothSim.l_matrix = Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, L);
+        //Debug.Log(clothSim.l_matrix);
+    }
+
+    void LocalGlobal_updateJMatrix()
+    {
+        // J is 3m * 3s size
+        double sk = Convert.ToDouble(stiffness);
+        Tuple<int, int, double>[] J = new Tuple<int, int, double>[6 * clothSim.springConstraint.Length];
+        for (int i = 0; i < clothSim.springConstraint.Length; i++)
+        {
+            SpringConstraint s = clothSim.springConstraint[i];
+            J[6 * i + 0] = Tuple.Create(3 * s.m_v1 + 0, 3 * i + 0, sk);
+            J[6 * i + 1] = Tuple.Create(3 * s.m_v1 + 1, 3 * i + 1, sk);
+            J[6 * i + 2] = Tuple.Create(3 * s.m_v1 + 2, 3 * i + 2, sk);
+
+            J[6 * i + 3] = Tuple.Create(3 * s.m_v2 + 0, 3 * i + 0, -sk);
+            J[6 * i + 4] = Tuple.Create(3 * s.m_v2 + 1, 3 * i + 1, -sk);
+            J[6 * i + 5] = Tuple.Create(3 * s.m_v2 + 2, 3 * i + 2, -sk);
+        }
+        clothSim.j_matrix = Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nEdges * 3, J);
+    }
+
+    Matrix<double> LocalGlobal_evaluate_CTC(double penalty)
+    {
+        // CTC is 3m * 3m size
+        Tuple<int, int, double>[] CTC = new Tuple<int, int, double>[3 * clothSim.pinConstraint.Length];
+        for (int i = 0; i < clothSim.pinConstraint.Length; i++)
+        {
+            PinConstraint pin = clothSim.pinConstraint[i];
+            CTC[3 * i + 0] = Tuple.Create(3 * pin.m_v0 + 0, 3 * pin.m_v0 + 0, penalty);
+            CTC[3 * i + 1] = Tuple.Create(3 * pin.m_v0 + 1, 3 * pin.m_v0 + 1, penalty);
+            CTC[3 * i + 2] = Tuple.Create(3 * pin.m_v0 + 2, 3 * pin.m_v0 + 2, penalty);
+        }
+        return Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, CTC);
+    }
+
+    Matrix<double> LocalGlobal_evaluate_d()
+    {
+        Matrix<double> d = Matrix<double>.Build.Dense(nEdges * 3, 1, 0.0f);
+        for (int i = 0; i < nEdges; i++)
+        {
+            SpringConstraint s = clothSim.springConstraint[i];
+            Matrix<double> p1 = clothSim.curr_p.SubMatrix(3*s.m_v1, 3, 0, 1);
+            Matrix<double> p2 = clothSim.curr_p.SubMatrix(3*s.m_v2, 3, 0, 1);
+            Matrix<double> di = (p1 - p2).NormalizeColumns(1.0) * nodeDistance;
+            d.SetSubMatrix(3*i, 3, 0, 1, di);
+        }
+        return d;
+    }
+
+    Matrix<double> buildGravityMatrix(float gravity, int mSize)
+    {
+        // gravity is a 3m x 3m size, which only affects Y direction
+        double[] temp_g = new double[3 * mSize];
+        for (int i = 0; i < mSize; i++)
+        {
+            temp_g[3 * i + 1] = -gravity;
+        }
+        return Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, temp_g);
     }
 
     void explicitEulerSimulationMethod()
     {
         for (int i = 0; i < simulationSteps; i++)
-        {
-            // do it in dynaic way, so that we don't have to thru all iterations to reach destinations.
+        {            
             explicitEuler_tickVel();
             explicitEuler_tickForce();
             explicitEuler_tickLight();
             explicitEuler_tickIntegration();
+            // do it in dynamic way, so that we don't have to through all iterations to reach destinations.
             // difference is small quit iteration. adjustment is small, quit. 
             // skip nodes. 
             // check if it should continue. 
@@ -223,21 +515,50 @@ public class OptMethod : MonoBehaviour
         }
     }
 
-    void explicitMatrixSimulationMethod()
+    void codeMatrixExample()
     {
-        Matrix<double> A = DenseMatrix.OfArray(new double[,] {  {1,1,1,1},
-                                                                {1,2,3,4},
-                                                                {4,3,2,1}   });
-
-        Matrix<double> B = DenseMatrix.OfArray(new double[,] {  {-1,-1,-1,-1},
-                                                                {1,2,3,4},
-                                                                {-4,-3,-2,-1}   });
-
+        // basic operation
+        Matrix<double> A = DenseMatrix.OfArray(new double[,] {  {1,1},
+                                                                {1,2} });
+        Matrix<double> B = DenseMatrix.OfArray(new double[,] {  {-1,-1},
+                                                                {3, 4} });
         Debug.Log(A + B);
 
-        //Vector3[,] c = new Vector3[,] {  {new Vector3(1,1,1), new Vector3(2,2,2)},
-        //                                 {new Vector3(1,1,1), new Vector3(2,2,2)} };
-        //Matrix<Vector3> C = c;
+        // build Matrix from Vector
+        double[] v = { 1, 2, 3 ,4};
+        Matrix<double> C = Matrix<double>.Build.DenseOfColumnMajor(2, 2, v);
+        Matrix<double> D = Matrix<double>.Build.DenseOfColumnMajor(4, 1, v);
+        Matrix<double> E = Matrix<double>.Build.DenseOfColumnMajor(1, 4, v);
+        Debug.Log(C);
+        Debug.Log(D);
+        Debug.Log(E);
+
+        // build from index
+        Tuple<int, int, double>[] t = { Tuple.Create(0, 0, 2.0), Tuple.Create(0, 1, -3.0) };
+        Matrix<double> F = Matrix<double>.Build.DenseOfIndexed(3, 4, t);
+        Debug.Log(F);
+
+        // Matrix Operation
+        Matrix<double> DE = D * E;
+        Matrix<double> FD = F * D;
+        Debug.Log(DE);
+        Debug.Log(FD);
+
+        // Modify the elements of a Matrix
+        Matrix<double> SUB = Matrix<double>.Build.DenseOfArray(new double[,] { { 1983 } });
+        DE.SetSubMatrix(2, 1, 2, 1, SUB);
+        Debug.Log(DE);
+
+        // solve equation Hx=b
+        var H = Matrix<double>.Build.DenseOfArray(new double[,] {   { 3, 2, -1 },
+                                                                    { 2, -2, 4 },
+                                                                    { -1, 0.5, -1 } });
+        var b = Vector<double>.Build.Dense(new double[] { 1, -2, 0 });
+        var b2 = Matrix<double>.Build.DenseOfArray(new double[,] {  { 1 },
+                                                                    { -2 },
+                                                                    { 0 } });
+        var x = H.Solve(b2);
+        Debug.Log(x);
     }
 
     void GPUSimulationMethod()
