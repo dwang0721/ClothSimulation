@@ -61,6 +61,7 @@ public struct ClothSimulation
     public Matrix<double> external_force; // 3m x 1, F= ma, 
     public Matrix<double> gravity_force; // 3m x 1, F= -mg, external_force[3*i+1] is where gravity should apply
 
+    public Matrix<double> A_matrix; // 3s x 3m
     public Matrix<double> l_matrix; // 3m x 3m
     public Matrix<double> j_matrix; // 3m x 3s
 
@@ -157,15 +158,15 @@ public class OptMethod : MonoBehaviour
                 break;
             case Selection.LocalGlobal:
                 // implementation here
-                nHairs = 2;
+                nHairs = 5;
                 nNodesPerHair = 1;
-                nEdges = 1;
+                nEdges = 4;
                 steph = 1.0f;
                 nodeDistance = 10;
-                stiffness = 0.01f;
-                gravity = 0.1f;
+                stiffness = 10.0f;
+                gravity = 3.0f;
                 clothSim.springConstraint = new SpringConstraint[nEdges];
-                clothSim.pinConstraint = new PinConstraint[1];
+                clothSim.pinConstraint = new PinConstraint[2];
                 break;
         }
 
@@ -227,6 +228,7 @@ public class OptMethod : MonoBehaviour
             clothSim.mass_matrix = Matrix<double>.Build.DenseDiagonal(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 1.0f);
             clothSim.external_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
             clothSim.gravity_force = buildGravityMatrix(gravity, nHairs * nNodesPerHair);
+            clothSim.A_matrix = Matrix<double>.Build.Dense(nEdges * 3, nHairs * nNodesPerHair * 3, 0.0f);
             clothSim.l_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 0.0f);
             clothSim.j_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nEdges * 3, 0.0f);
 
@@ -238,20 +240,20 @@ public class OptMethod : MonoBehaviour
             clothSim.pinConstraint[0].m_v0 = 0;
 
             // second spring
-            //clothSim.springConstraint[1].m_v1 = 1;
-            //clothSim.springConstraint[1].m_v2 = 2;
-            //clothSim.springConstraint[1].ks = stiffness;
+            clothSim.springConstraint[1].m_v1 = 1;
+            clothSim.springConstraint[1].m_v2 = 2;
+            clothSim.springConstraint[1].ks = stiffness;
 
             // third spring
-            //clothSim.springConstraint[2].m_v1 = 2;
-            //clothSim.springConstraint[2].m_v2 = 3;
-            //clothSim.springConstraint[2].ks = stiffness;
+            clothSim.springConstraint[2].m_v1 = 2;
+            clothSim.springConstraint[2].m_v2 = 3;
+            clothSim.springConstraint[2].ks = stiffness;
 
-            //clothSim.springConstraint[3].m_v1 = 3;
-            //clothSim.springConstraint[3].m_v2 = 4;
-            //clothSim.springConstraint[3].ks = stiffness;
+            clothSim.springConstraint[3].m_v1 = 3;
+            clothSim.springConstraint[3].m_v2 = 4;
+            clothSim.springConstraint[3].ks = stiffness;
 
-            //clothSim.pinConstraint[1].m_v0 = 2;
+            //clothSim.pinConstraint[1].m_v0 = 4;
         }
     }
 
@@ -351,37 +353,42 @@ public class OptMethod : MonoBehaviour
     {
         // Step1 CalculateInteria component y = 2 * P_current - P_previous
         LocalGlobal_updateInertiaY();
-        // Debug.Log(clothSim.inertia_y);
+        // Debug.Log(clothSim.inertia_y);        
 
         // Step2 build External Force Vector
         LocalGlobal_updateExternalForce();
-        Debug.Log(clothSim.external_force);
+        // Debug.Log(clothSim.external_force);
 
-        // Calculate L matrix
-        LocalGlobal_updateLaplacian();
-        Debug.Log(clothSim.l_matrix);
+        // Calculate L matrix, LLaplacian generate smooth transition from A to B. Investigate this.
+        LocalGlobal_updateAandLMatrix();
+        // LocalGlobal_updateLaplacian();
+        // Debug.Log(clothSim.l_matrix);
 
         // Calculate J matrix
         LocalGlobal_updateJMatrix();
-        //Debug.Log(clothSim.j_matrix);
+        Debug.Log(clothSim.j_matrix);
+        clothSim.j_matrix = stiffness * clothSim.A_matrix.Transpose();
+        Debug.Log(clothSim.j_matrix);
 
         // Calculate Pinned constraint CT * C
         Matrix<double> CTC = LocalGlobal_evaluate_CTC(10000000);
         //Debug.Log(CTC);
 
-        // evaluate Q = M + h^2 * L        
-        Matrix<double> Q = clothSim.mass_matrix + (clothSim.l_matrix + CTC) * steph * steph;
+        // evaluate Q = M + h^2 * ( L + CTC )        
+        Matrix<double> Q = clothSim.mass_matrix + steph * steph * (clothSim.l_matrix + CTC) ;
         //Debug.Log(Q);
 
         // evaluate d
         Matrix<double> d = LocalGlobal_evaluate_d();
+        // Debug.Log(d);
 
-        // calculate b = M * y + (f + J * d ) * h^2
+        // calculate b = M * y + (f + J * d + CTC * clothSim.rest_p) * h^2
         Matrix<double> b = clothSim.mass_matrix * clothSim.inertia_y + (clothSim.external_force + clothSim.j_matrix * d + CTC * clothSim.rest_p) * steph * steph;
-        //Debug.Log(clothSim.rest_p);
+        //Debug.Log(b);
 
-        // solve equation Q p = b
+        // solve equation Q p = b, Q = LT * L
         Matrix<double> next_p = Q.Solve(b);
+        next_p.SetSubMatrix(0, 3, 0, 1, clothSim.rest_p.SubMatrix(0, 3, 0, 1));
 
         // upgrade current, previous position. next_p.SetSubMatrix(0, 3, 0, 1, clothSim.rest_p.SubMatrix(0, 3, 0, 1));
         clothSim.prev_p = clothSim.curr_p;
@@ -397,7 +404,7 @@ public class OptMethod : MonoBehaviour
     void LocalGlobal_updateInertiaY()
     {
         //y = 2 * curr_pos - prev_pos.
-        clothSim.inertia_y = clothSim.curr_p + (clothSim.curr_p - clothSim.prev_p) * 0.1f;
+        clothSim.inertia_y = clothSim.curr_p + (clothSim.curr_p - clothSim.prev_p);
     }
 
     void LocalGlobal_updateExternalForce()
@@ -438,6 +445,27 @@ public class OptMethod : MonoBehaviour
         //Debug.Log(clothSim.l_matrix);
     }
 
+    void LocalGlobal_updateAandLMatrix()
+    {
+        // L is 3m * 3m size
+        double sk = Convert.ToDouble(stiffness);
+        Tuple<int, int, double>[] A = new Tuple<int, int, double>[6 * clothSim.springConstraint.Length];
+
+        for (int row = 0; row < clothSim.springConstraint.Length; row++)
+        {
+            SpringConstraint s = clothSim.springConstraint[row];
+            A[6 * row + 0] = Tuple.Create(3 * s.m_v1 + 0, 3 * s.m_v1 + 0, 1.0);
+            A[6 * row + 1] = Tuple.Create(3 * s.m_v1 + 1, 3 * s.m_v1 + 1, 1.0);
+            A[6 * row + 2] = Tuple.Create(3 * s.m_v1 + 2, 3 * s.m_v1 + 2, 1.0);
+            A[6 * row + 3] = Tuple.Create(3 * s.m_v1 + 0, 3 * s.m_v2 + 0, -1.0);
+            A[6 * row + 4] = Tuple.Create(3 * s.m_v1 + 1, 3 * s.m_v2 + 1, -1.0);
+            A[6 * row + 5] = Tuple.Create(3 * s.m_v1 + 2, 3 * s.m_v2 + 2, -1.0);
+        }
+        clothSim.A_matrix = Matrix<double>.Build.DenseOfIndexed(clothSim.springConstraint.Length * 3, nHairs * nNodesPerHair * 3, A);
+        Matrix<double> L = sk * clothSim.A_matrix.TransposeThisAndMultiply(clothSim.A_matrix);
+        clothSim.l_matrix = L;
+    }
+
     void LocalGlobal_updateJMatrix()
     {
         // J is 3m * 3s size
@@ -454,7 +482,7 @@ public class OptMethod : MonoBehaviour
             J[6 * i + 4] = Tuple.Create(3 * s.m_v2 + 1, 3 * i + 1, -sk);
             J[6 * i + 5] = Tuple.Create(3 * s.m_v2 + 2, 3 * i + 2, -sk);
         }
-        clothSim.j_matrix = Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nEdges * 3, J);
+        clothSim.j_matrix = Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nEdges * 3, J);        
     }
 
     Matrix<double> LocalGlobal_evaluate_CTC(double penalty)
@@ -479,7 +507,7 @@ public class OptMethod : MonoBehaviour
             SpringConstraint s = clothSim.springConstraint[i];
             Matrix<double> p1 = clothSim.curr_p.SubMatrix(3*s.m_v1, 3, 0, 1);
             Matrix<double> p2 = clothSim.curr_p.SubMatrix(3*s.m_v2, 3, 0, 1);
-            Matrix<double> di = (p1 - p2).NormalizeColumns(1.0) * nodeDistance;
+            Matrix<double> di = (p1 - p2).NormalizeColumns(2.0) * nodeDistance;
             d.SetSubMatrix(3*i, 3, 0, 1, di);
         }
         return d;
