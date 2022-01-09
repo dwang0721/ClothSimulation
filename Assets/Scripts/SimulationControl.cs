@@ -15,16 +15,17 @@ public class SimulationControl : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // find sliders
         SliderDistance = gameObject.transform.Find("distance").GetComponent<Slider>();
         SliderStiffness = gameObject.transform.Find("stiffness").GetComponent<Slider>();
         SliderGravity = gameObject.transform.Find("gravity").GetComponent<Slider>();        
         SliderMaxTravel = gameObject.transform.Find("maxTravel").GetComponent<Slider>();
         SliderBendingStiffness = gameObject.transform.Find("bendStiff").GetComponent<Slider>();
         SliderFriction = gameObject.transform.Find("friction").GetComponent<Slider>();
-
         LightIntensity = gameObject.transform.Find("intensity").GetComponent<Slider>();
         LightAngle = gameObject.transform.Find("angle").GetComponent<Slider>();
 
+        // set up callbacks
         SliderDistance.onValueChanged.AddListener(delegate { simulationController3D.updateNodeDistance(SliderDistance.value); });
         SliderStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateStiffness(SliderStiffness.value); });
         SliderGravity.onValueChanged.AddListener(delegate { simulationController3D.updateGravity(SliderGravity.value); });
@@ -42,13 +43,16 @@ public class SimulationControl : MonoBehaviour
         LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
         LightAngle.onValueChanged.AddListener(delegate { theLampOptMethod.setViewingAngle(LightAngle.value); });
 
+        SliderStiffness.onValueChanged.AddListener(delegate { simulationOptMethodController.updateStiffness(SliderStiffness.value); });
+
         initSliders();
     }
 
     void initSliders()
     {
+        // init slider values.
         SliderDistance.GetComponent<UpdateValue>().updateSliderBar(CPU3D.nodeDistance, 0.2f, 2f);
-        SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.stiffness, 3f, 10f);
+        SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.stiffness, 3f, 100f);
         SliderGravity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.gravity, 0.05f, 0.3f);
         SliderMaxTravel.GetComponent<UpdateValue>().updateSliderBar(CPU3D.maxTravelDistance, 0.5f, 20f);
         SliderBendingStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.bendingStiffness, 0.01f, 0.5f);

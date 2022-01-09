@@ -627,8 +627,14 @@ public class OptMethod : MonoBehaviour
     }
 
 
-    //////////////////////////// Not used functions ////////////////////////////
+    //////////////////////////// Slider Callbacks ////////////////////////////
+    public void updateStiffness(float stiff)
+    {
+        stiffness = stiff;
+    }
 
+
+    //////////////////////////// Not used functions ////////////////////////////
     /*
      * examples of using the Math library.
      */
