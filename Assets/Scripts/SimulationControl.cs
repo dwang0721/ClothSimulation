@@ -15,7 +15,7 @@ public class SimulationControl : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // find sliders
+        // find slider controls
         SliderDistance = gameObject.transform.Find("distance").GetComponent<Slider>();
         SliderStiffness = gameObject.transform.Find("stiffness").GetComponent<Slider>();
         SliderGravity = gameObject.transform.Find("gravity").GetComponent<Slider>();        
@@ -27,8 +27,15 @@ public class SimulationControl : MonoBehaviour
 
         // set up callbacks
         SliderDistance.onValueChanged.AddListener(delegate { simulationController3D.updateNodeDistance(SliderDistance.value); });
+
+        // stiffness callbacks
         SliderStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateStiffness(SliderStiffness.value); });
+        SliderStiffness.onValueChanged.AddListener(delegate { simulationOptMethodController.updateStiffness(SliderStiffness.value); });
+
+        // gravity callbacks
         SliderGravity.onValueChanged.AddListener(delegate { simulationController3D.updateGravity(SliderGravity.value); });
+        SliderGravity.onValueChanged.AddListener(delegate { simulationOptMethodController.updateGravity(SliderGravity.value); });
+
         SliderMaxTravel.onValueChanged.AddListener(delegate { simulationController3D.updateMaxTravel(SliderMaxTravel.value); });
         SliderBendingStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateBendStiff(SliderBendingStiffness.value); });
         SliderFriction.onValueChanged.AddListener(delegate { simulationController3D.updateFriction(SliderFriction.value); });
@@ -43,7 +50,7 @@ public class SimulationControl : MonoBehaviour
         LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
         LightAngle.onValueChanged.AddListener(delegate { theLampOptMethod.setViewingAngle(LightAngle.value); });
 
-        SliderStiffness.onValueChanged.AddListener(delegate { simulationOptMethodController.updateStiffness(SliderStiffness.value); });
+        
 
         initSliders();
     }
@@ -53,7 +60,7 @@ public class SimulationControl : MonoBehaviour
         // init slider values.
         SliderDistance.GetComponent<UpdateValue>().updateSliderBar(CPU3D.nodeDistance, 0.2f, 2f);
         SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.stiffness, 3f, 100f);
-        SliderGravity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.gravity, 0.05f, 0.3f);
+        SliderGravity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.gravity, 0.05f, 5.0f);
         SliderMaxTravel.GetComponent<UpdateValue>().updateSliderBar(CPU3D.maxTravelDistance, 0.5f, 20f);
         SliderBendingStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.bendingStiffness, 0.01f, 0.5f);
         SliderFriction.GetComponent<UpdateValue>().updateSliderBar(CPU3D.velocityDecay, 0.998f, 0.9999f);
