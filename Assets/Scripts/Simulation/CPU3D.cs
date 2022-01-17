@@ -99,7 +99,7 @@ public class CPU3D: MonoBehaviour
         hairNodesArray = new HairNode3D[ nHairs * nNodesPerHair ];
 
         // simulation variables
-        nodeDistance = 0.5f;    // Initial Node distance apart.
+        nodeDistance = 0.49f;    // Initial Node distance apart.
         dPosition = 0.0004f;    // Euler method integration ratio for speed.
         dVelocity = 1.0f;       // Euler method integration ratio for acceleration.
         forceDecay = 0.0000f;
