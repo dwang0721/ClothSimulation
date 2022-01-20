@@ -42,9 +42,11 @@ public struct ClothSimulationImplicit
 
     public Matrix<double> inertia_y; // 3m x 1, y = 2 * curr_pos - prev_pos. 
     public Matrix<double> mass_matrix; // 3m x 3m, M with mass along the diagonal line. 
-    public Matrix<double> external_force; // 3m x 1, F= ma, 
+    
     public Matrix<double> gravity_unit; // 3m x 1, gravity_unit[3*1+1] is to normalized constant 1;
     public Matrix<double> gravity_force; // 3m x 1, gravity_force = g * gravity_unit, this matrix is updated in run time.
+    public Matrix<double> light_force; // light cast on the nodes, generating a force matrix. 
+    public Matrix<double> external_force; // 3m x 1, F = gravity + light.
 
     public Matrix<double> A_matrix; // 3s x 3m, A defines the relations between Spring and Nodes. A_ij = 1, -1 or 0;
     public Matrix<double> AT_matrix; // 3m X 3s, A = A.transpose();
@@ -61,7 +63,7 @@ public class OptMethod : MonoBehaviour
 {
     // stuff can be seen from the UI
     public GameObject hairPrefab, colliderPrefab;
-    public LampOptMethod theLamp;
+    public Lamp theLamp;
     public Texture2D weightMap;
 
     // Cloth vertex Data Structure.
@@ -126,7 +128,13 @@ public class OptMethod : MonoBehaviour
         bendingStiffness = 0.1f;
         steph = 1.0f;
         stiffness = 5.0f;
-        
+
+        // light control
+        lightForce = 0.1f;
+        lightAngle = 10.0f;
+        headPos = theLamp.head.transform.position;
+        headLookAtPos = theLamp.headLookAt;
+
         // empty constraints
         ClothSimImp.springConstraint = new SpringConstraint[nEdges];
         ClothSimImp.pinConstraint = new PinConstraint[2];
@@ -154,6 +162,7 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.inertia_y = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, initial_pos);
         ClothSimImp.mass_matrix = Matrix<double>.Build.DenseDiagonal(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 1.0f);
         ClothSimImp.external_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
+        ClothSimImp.light_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f) ;
         ClothSimImp.gravity_unit = LocalGlobal_compute_MatrixG(1, nHairs * nNodesPerHair);
         ClothSimImp.A_matrix = Matrix<double>.Build.Dense(nEdges * 3, nHairs * nNodesPerHair * 3, 0.0f);
         ClothSimImp.L_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, 0.0f);
@@ -242,8 +251,8 @@ public class OptMethod : MonoBehaviour
             // implementation
             int nodeIndex = i * nNodesPerHair + j;
             clothVertArray[nodeIndex].transform.position = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex, 0)),
-                                                                        Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 1, 0)),
-                                                                        Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 2, 0)));
+                                                                       Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 1, 0)),
+                                                                       Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 2, 0)));
             }
         }
     }
@@ -349,12 +358,48 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.inertia_y = ClothSimImp.curr_p + (ClothSimImp.curr_p - ClothSimImp.prev_p);
     }
 
+    void LocalGlobal_update_lightForce() {
+        // initialize to zero
+        ClothSimImp.light_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
+        
+        double[] light_force_array = new double[nHairs * nNodesPerHair * 3];
+
+        // lookAtDir
+        Vector3 head_look_at_dir = (headLookAtPos - headPos).normalized;
+
+        for (int i = 0; i < nHairs * nNodesPerHair; i++) {
+            Vector3 curr_node_pos = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
+                                                Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
+                                                Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+            Vector3 head_to_node_dir = (curr_node_pos - headPos).normalized;
+            float dot_value = Vector3.Dot(head_look_at_dir, head_to_node_dir);
+
+            if (dot_value > Math.Cos(lightAngle * 0.0174533f * 0.5f)) {
+                light_force_array[3 * i + 0] = head_to_node_dir.x * lightForce; // To Do: should consider devide by mass
+                light_force_array[3 * i + 1] = head_to_node_dir.y * lightForce;
+                light_force_array[3 * i + 2] = head_to_node_dir.z * lightForce;
+            }
+            else {
+                light_force_array[3 * i + 0] = 0.0f;
+                light_force_array[3 * i + 1] = 0.0f;
+                light_force_array[3 * i + 2] = 0.0f;
+            }
+
+        }
+
+        ClothSimImp.light_force = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, light_force_array);
+    }
+
+    void LocalGlobal_update_gravityForce()
+    {
+        ClothSimImp.gravity_force = gravity * ClothSimImp.gravity_unit;
+    }
+
     void LocalGlobal_update_externalForce()
     {
-        ClothSimImp.external_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f); // TODO: currently set to 0, need to be connected to the light. 
-        ClothSimImp.gravity_force = gravity * ClothSimImp.gravity_unit;
-        ClothSimImp.external_force = ClothSimImp.external_force + ClothSimImp.gravity_force;
-        ClothSimImp.external_force = ClothSimImp.mass_matrix * ClothSimImp.external_force; // f = ma
+        LocalGlobal_update_lightForce();
+        LocalGlobal_update_gravityForce();
+        ClothSimImp.external_force = ClothSimImp.mass_matrix * (ClothSimImp.light_force + ClothSimImp.gravity_force); 
     }
 
     void LocalGlobal_update_matrixL()
@@ -414,7 +459,7 @@ public class OptMethod : MonoBehaviour
         }
     }
 
-    public void updateLightLooAtSettings(Vector3 lightHeadPos, Vector3 lightHeadLootAt)
+    public void updateLightLookAtSettings(Vector3 lightHeadPos, Vector3 lightHeadLootAt)
     {
         headPos = lightHeadPos;
         headLookAtPos = lightHeadLootAt;
@@ -422,13 +467,11 @@ public class OptMethod : MonoBehaviour
 
     public void updatelightForce(float f)
     {
-        //shader.SetFloat("lightForce", lightForce);
         lightForce = f;
     }
 
     public void updatelightAngle(float a)
     {
-        //shader.SetFloat("lightAngle", lightAngle);
         lightAngle = a;
     }
 

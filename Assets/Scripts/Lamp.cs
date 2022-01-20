@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class Lamp : MonoBehaviour
 {
-    public CPU3D simulation;
+    public CPU3D explictSimulator;
+    public OptMethod implicitSimulator;
+
     public float tumbleSpeed;
     float viewingAngle;
     public Material lightMaterial;
@@ -25,12 +27,15 @@ public class Lamp : MonoBehaviour
     Vector3 offset;
     Vector3 screenPoint;
     GameObject collider;
-    
+
+    // simulation mode
+    public SimulationMethod simulationMode = SimulationMethod.LocalGlobal;
 
     // Start is called before the first frame update
     void Start()
     {        
-        Debug.Assert(simulation);
+        Debug.Assert(explictSimulator);
+        Debug.Assert(implicitSimulator);
         Debug.Assert(head);        
 
         // Instantiate line segments
@@ -39,7 +44,7 @@ public class Lamp : MonoBehaviour
         lsLeft = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsUp = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsDown = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
-    }
+}
 
     void updatePosition() {
         if (!isSelected) { return; }
@@ -114,7 +119,18 @@ public class Lamp : MonoBehaviour
 
     void updateLightSimulation()
     {
-        simulation.updateLightDirection(head.transform.position, headLookAt);
+        switch (simulationMode)
+        {
+            case SimulationMethod.ExplicitGPU:
+                explictSimulator.updateLightDirection(head.transform.position, headLookAt);
+                break;
+            case SimulationMethod.LocalGlobal:
+                implicitSimulator.updateLightLookAtSettings(head.transform.position, headLookAt);
+                break;
+            default:
+                // code block
+                break;
+        }
     }
 
     public void setViewingAngle(float angle)
@@ -131,11 +147,15 @@ public class Lamp : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {   
-        if (!gotCollider) {
-            collider = simulation.getCollider();
-            if (collider != null) {
-                gotCollider = true;
+    {
+        if (simulationMode == SimulationMethod.ExplicitGPU) // currently GPU has collidor
+        {
+            if (!gotCollider) {
+                collider = explictSimulator.getCollider();
+                if (collider != null)
+                {
+                    gotCollider = true;
+                }
             }
         }
 

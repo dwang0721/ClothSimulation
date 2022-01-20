@@ -18,7 +18,7 @@ public class SequentialMethod : MonoBehaviour
 {
     // stuff can be seen from the UI
     public GameObject hairPrefab, colliderPrefab;
-    public LampOptMethod theLamp;
+    public Lamp theLamp;
     public Texture2D weightMap;
 
     static GameObject[] clothVertArray;
