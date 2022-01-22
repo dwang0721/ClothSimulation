@@ -29,10 +29,12 @@ public class CPU3D: MonoBehaviour
     static public int res;
     static public int simulationSteps;
 
+    // hair nodes,  hair is a vertical line of the cloth
     public static int nHairs, nNodesPerHair;
     static HairNode3D[] hairNodesArray;    
     static GameObject[] hairGeos;
 
+    // colliders
     static public int nColliders;
     static public float colliderRadius;
     static ColliderNode3D[] colliderNodeArrays;
@@ -83,6 +85,7 @@ public class CPU3D: MonoBehaviour
     void Update()
     {
         simulationOnGPU();
+        updateHairGeoPositions();
         updateHairGeoPositions();
         updateDataFromCollider();
     }

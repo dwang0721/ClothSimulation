@@ -33,6 +33,11 @@ public struct PinConstraint
     public int m_v0;
 }
 
+public struct ColliderNodes
+{
+    public float x, y, z, r;
+};
+
 public struct ClothSimulationImplicit
 {
     // m is size of the nodes, s is the size of the spring. 
@@ -49,7 +54,7 @@ public struct ClothSimulationImplicit
     public Matrix<double> external_force; // 3m x 1, F = gravity + light.
 
     public Matrix<double> A_matrix; // 3s x 3m, A defines the relations between Spring and Nodes. A_ij = 1, -1 or 0;
-    public Matrix<double> AT_matrix; // 3m X 3s, A = A.transpose();
+    public Matrix<double> AT_matrix; // 3m X 3s, AT = A.transpose();
     public Matrix<double> ATA_matrix; // 3m x 3m, ATA = AT * A, ATA should be pre-computed to update L matrix;
     public Matrix<double> L_matrix; // 3m x 3m, L is the stiffness weighted Laplacian among the Nodes. L = k * ATA;
     public Matrix<double> J_matrix; // 3m x 3s, J = k * AT;
@@ -65,6 +70,7 @@ public class OptMethod : MonoBehaviour
     public GameObject hairPrefab, colliderPrefab;
     public Lamp theLamp;
     public Texture2D weightMap;
+    public int LightIntensityMutiplier = 10;
 
     // Cloth vertex Data Structure.
     static GameObject[] clothVertArray;
@@ -72,18 +78,19 @@ public class OptMethod : MonoBehaviour
     // Implicit Method Data Structure.
     static ClothSimulationImplicit ClothSimImp;
 
-    static public int simulationSteps;
+    // hair nodes, hair is a vertical line of the cloth
     static public int nHairs, nNodesPerHair, nEdges;
     static public float steph;
 
-    public static float nodeDistance;
-    static float dPosition;             // speed ratio for euler's method
-    static float dVelocity;             // force ratio for euler's method
-    public static float forceDecay;
-    public static float velocityDecay;
+    // colliders
+    static public int nColliders;
+    static public float colliderRadius;
+    static ColliderNodes[] colliderNodeArrays;
+    static public GameObject[] colliderGeos;
+
+    public static float nodeDistance;            
     public static float gravity;
     public static float stiffness;             // used for Hooke's law spring coefficient.
-    public static float maxTravelDistance;     // the maximum distance node apart.
     public static float bendingStiffness;      // coefficient for bending forces
 
     public static float lightForce;
@@ -99,6 +106,11 @@ public class OptMethod : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Debug.Assert(hairPrefab);
+        Debug.Assert(colliderPrefab);
+        Debug.Assert(theLamp);
+        Debug.Assert(weightMap);
+
         initGeo();
         //codeMatrixExample(); 
     }
@@ -110,6 +122,32 @@ public class OptMethod : MonoBehaviour
         updateClothVertexPositions();
     }
 
+    //////////////////////////// Cloth Initialization ////////////////////////////
+    void initGeo()
+    {
+        // instantiate hair objects
+        clothVertArray = new GameObject[nHairs * nNodesPerHair];
+        for (int i = 0; i < nHairs * nNodesPerHair; i++)
+        {
+            Vector3 location = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
+                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
+                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+            GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
+            newitem.transform.localScale = new Vector3(1, 1, 1);
+            clothVertArray[i] = newitem;
+        }
+
+        //  instantiate collider
+        colliderGeos = new GameObject[nColliders];
+        for (int i = 0; i < nColliders; i++)
+        {
+            Vector3 location = new Vector3(colliderNodeArrays[i].x, colliderNodeArrays[i].y, colliderNodeArrays[i].z);
+            var newitem = Instantiate(colliderPrefab, location, Quaternion.identity);
+            newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
+            colliderGeos[i] = newitem;
+        }
+    }
+
     void initData()
     {
         // hair nodes
@@ -118,14 +156,8 @@ public class OptMethod : MonoBehaviour
         nEdges = (nHairs - 1) * nNodesPerHair + (nNodesPerHair - 1) * nHairs;
 
         // global simulation variables
-        nodeDistance = 3;    // Initial Node distance apart.
-        dPosition = 0.0004f;    // Euler method integration ratio for speed.
-        dVelocity = 1.0f;       // Euler method integration ratio for acceleration.
-        forceDecay = 0.0000f;
-        velocityDecay = 0.999f;
+        nodeDistance = 3;
         gravity = 0.5f;
-        maxTravelDistance = 5.0f;
-        bendingStiffness = 0.1f;
         steph = 1.0f;
         stiffness = 5.0f;
 
@@ -224,39 +256,21 @@ public class OptMethod : MonoBehaviour
 
         // calculate CTC matrix, CTC is used to set the pinned vertex;
         LocalGlobal_compute_MatrixCTC(10000000);
-    }
 
-    void initGeo()
-    {
-        // instantiate hair objects
-        clothVertArray = new GameObject[nHairs * nNodesPerHair];
-        for (int i = 0; i < nHairs * nNodesPerHair; i++)
+        // collider data
+        nColliders = 1;
+        colliderRadius = 8.0f;
+        colliderNodeArrays = new ColliderNodes[nColliders];
+        for (int i = 0; i < nColliders; i++)
         {
-            Vector3 location = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
-                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
-                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
-            GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
-            newitem.transform.localScale = new Vector3(1, 1, 1);
-            clothVertArray[i] = newitem;
+            colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2); ;
+            colliderNodeArrays[i].y = -20.0f;
+            colliderNodeArrays[i].z = 0.0f;
+            colliderNodeArrays[i].r = colliderRadius;
         }
     }
 
-    void updateClothVertexPositions()
-    {
-        for (int i = 0; i < nHairs; i++)
-        {
-            for (int j = 0; j < nNodesPerHair; j++)
-            {
-
-            // implementation
-            int nodeIndex = i * nNodesPerHair + j;
-            clothVertArray[nodeIndex].transform.position = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex, 0)),
-                                                                       Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 1, 0)),
-                                                                       Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 2, 0)));
-            }
-        }
-    }
-
+    //////////////////////////// Cloth Simulation Loop ////////////////////////////
     void tickSimulation()
     {
         implicitEulerSimulationMethod();
@@ -264,6 +278,8 @@ public class OptMethod : MonoBehaviour
 
     void implicitEulerSimulationMethod()
     {
+        LocalGlobal_update_position_from_collision();
+
         // CalculateInteria component y = 2 * P_current - P_previous
         LocalGlobal_update_inertiaY();      
 
@@ -293,11 +309,8 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.prev_p = ClothSimImp.curr_p;
         ClothSimImp.curr_p = next_p;
 
-        // Debug.Log(clothSim.curr_p);
-
         // calculating damping?
     }
-
 
     //////////////////////////// Cloth data pre-computation ////////////////////////////
     void LocalGlobal_compute_matrixA()
@@ -351,7 +364,50 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.ATA_matrix = ClothSimImp.A_matrix.TransposeThisAndMultiply(ClothSimImp.A_matrix);
     }
 
+
     //////////////////////////// Cloth data run time update ////////////////////////////
+    void updateClothVertexPositions()
+    {
+        for (int i = 0; i < nHairs; i++)
+        {
+            for (int j = 0; j < nNodesPerHair; j++)
+            {
+
+                // implementation
+                int nodeIndex = i * nNodesPerHair + j;
+                clothVertArray[nodeIndex].transform.position = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex, 0)),
+                                                                           Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 1, 0)),
+                                                                           Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 2, 0)));
+            }
+        }
+    }
+
+    void LocalGlobal_update_position_from_collision()
+    {
+        double[] new_pos = new double[nHairs * nNodesPerHair * 3];
+
+        for (int j = 0; j < nColliders; j++)
+        {
+            for (int i = 0; i < nHairs * nNodesPerHair; i++)
+            {
+                Vector3 curr_node_pos = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
+                                                    Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
+                                                    Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+                Vector3 node_to_collider = curr_node_pos - colliderGeos[j].transform.position;
+
+                if (node_to_collider.magnitude < colliderRadius) {
+                    Vector3 p = colliderGeos[j].transform.position + node_to_collider.normalized * colliderRadius;
+                    Matrix<double> new_sub_p_matrix = Matrix<double>.Build.Dense(3, 1, new double[] {p.x, p.y, p.z});
+
+                    ClothSimImp.curr_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
+                    ClothSimImp.prev_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
+                    ClothSimImp.rest_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
+                }
+            }
+        }
+            return;
+    }
+
     void LocalGlobal_update_inertiaY()
     {
         // y = 2 * curr_pos - prev_pos.
@@ -359,8 +415,6 @@ public class OptMethod : MonoBehaviour
     }
 
     void LocalGlobal_update_lightForce() {
-        // initialize to zero
-        ClothSimImp.light_force = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, 1, 0.0f);
         
         double[] light_force_array = new double[nHairs * nNodesPerHair * 3];
 
@@ -375,18 +429,16 @@ public class OptMethod : MonoBehaviour
             float dot_value = Vector3.Dot(head_look_at_dir, head_to_node_dir);
 
             if (dot_value > Math.Cos(lightAngle * 0.0174533f * 0.5f)) {
-                light_force_array[3 * i + 0] = head_to_node_dir.x * lightForce; // To Do: should consider devide by mass
-                light_force_array[3 * i + 1] = head_to_node_dir.y * lightForce;
-                light_force_array[3 * i + 2] = head_to_node_dir.z * lightForce;
+                light_force_array[3 * i + 0] = head_to_node_dir.x * lightForce * LightIntensityMutiplier; // To Do: should consider devide by mass
+                light_force_array[3 * i + 1] = head_to_node_dir.y * lightForce * LightIntensityMutiplier;
+                light_force_array[3 * i + 2] = head_to_node_dir.z * lightForce * LightIntensityMutiplier;
             }
             else {
                 light_force_array[3 * i + 0] = 0.0f;
                 light_force_array[3 * i + 1] = 0.0f;
                 light_force_array[3 * i + 2] = 0.0f;
             }
-
         }
-
         ClothSimImp.light_force = Matrix<double>.Build.DenseOfColumnMajor(nHairs * nNodesPerHair * 3, 1, light_force_array);
     }
 
@@ -420,7 +472,7 @@ public class OptMethod : MonoBehaviour
         for (int i = 0; i < nEdges; i++)
         {
             SpringConstraint s = ClothSimImp.springConstraint[i];
-            Matrix<double> p1 = ClothSimImp.curr_p.SubMatrix(3*s.m_v1, 3, 0, 1);
+            Matrix<double> p1 = ClothSimImp.curr_p.SubMatrix(3*s.m_v1, 3, 0, 1); 
             Matrix<double> p2 = ClothSimImp.curr_p.SubMatrix(3*s.m_v2, 3, 0, 1);
             Matrix<double> di = (p1 - p2).NormalizeColumns(2.0) * nodeDistance;
             d.SetSubMatrix(3*i, 3, 0, 1, di);
@@ -482,6 +534,12 @@ public class OptMethod : MonoBehaviour
      */
     void codeMatrixExample()
     {
+        // void SetSubMatrix(int rowIndex, int rowCount, int columnIndex, int columnCount, Matrix<T> subMatrix)
+        // Matrix<double> p1 = ClothSimImp.curr_p.SubMatrix(3*s.m_v1, 3, 0, 1); 
+
+        // void SetSubMatrix(int rowIndex, int rowCount, int columnIndex, int columnCount, Matrix<T> subMatrix)
+        // d.SetSubMatrix(3*i, 3, 0, 1, di);
+
         // basic operation
         Debug.Log("Matrix Addition:");
         Matrix<double> A = DenseMatrix.OfArray(new double[,] {  {1,1},

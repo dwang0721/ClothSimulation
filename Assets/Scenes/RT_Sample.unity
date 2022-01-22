@@ -158,6 +158,7 @@ MonoBehaviour:
     type: 3}
   theLamp: {fileID: 5476361862550543582}
   weightMap: {fileID: 2800000, guid: 4618124f4785e6d4783fa8f19d58e331, type: 3}
+  LightIntensityMutiplier: 10
 --- !u!4 &4333656
 Transform:
   m_ObjectHideFlags: 0
