@@ -71,6 +71,7 @@ public class OptMethod : MonoBehaviour
     public Lamp theLamp;
     public Texture2D weightMap;
     public int LightIntensityMutiplier = 10;
+    public int resolution = 10;
 
     // Cloth vertex Data Structure.
     static GameObject[] clothVertArray;
@@ -98,11 +99,6 @@ public class OptMethod : MonoBehaviour
     public static Vector3 headPos;
     public static Vector3 headLookAtPos;
 
-    private void Awake()
-    {
-        initData();
-    }
-
     // Start is called before the first frame update
     void Start()
     {
@@ -110,7 +106,9 @@ public class OptMethod : MonoBehaviour
         Debug.Assert(colliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
+        Debug.Assert(resolution > 0);
 
+        initData();
         initGeo();
         //codeMatrixExample(); 
     }
@@ -151,8 +149,8 @@ public class OptMethod : MonoBehaviour
     void initData()
     {
         // hair nodes
-        nHairs = 10;
-        nNodesPerHair = 10;
+        nHairs = resolution;
+        nNodesPerHair = resolution;
         nEdges = (nHairs - 1) * nNodesPerHair + (nNodesPerHair - 1) * nHairs;
 
         // global simulation variables
@@ -278,7 +276,7 @@ public class OptMethod : MonoBehaviour
 
     void implicitEulerSimulationMethod()
     {
-        LocalGlobal_update_position_from_collision();
+
 
         // CalculateInteria component y = 2 * P_current - P_previous
         LocalGlobal_update_inertiaY();      
@@ -308,6 +306,9 @@ public class OptMethod : MonoBehaviour
         // upgrade current, previous position.
         ClothSimImp.prev_p = ClothSimImp.curr_p;
         ClothSimImp.curr_p = next_p;
+
+        // collision
+        LocalGlobal_update_position_from_collision();
 
         // calculating damping?
     }

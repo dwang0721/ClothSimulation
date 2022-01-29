@@ -3,20 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum SimulationMethod { ExplicitGPU, ExplicitCPU, LocalGlobal };
 
+/*
+ * This is the run time simulation controller. The simulation properties can be updated in each frame
+ */
 public class SimulationControl : MonoBehaviour
 {
     public CPU3D simulationController3D;
     public OptMethod simulationOptMethodController;
     public Lamp theLamp;
+    public SimulationMethod simulationMode;
     Slider SliderStiffness, SliderGravity, SliderDistance, SliderMaxTravel, SliderBendingStiffness, SliderFriction;
     Slider LightIntensity, LightAngle;
 
-    public SimulationMethod simulationMode = SimulationMethod.ExplicitGPU;
+    GlobalData globalData;
 
     private void Awake()
     {
+        // take data from the global setting
+        globalData = GameObject.FindGameObjectsWithTag("GlobalData")[0].GetComponent<GlobalData>();
+        Debug.Assert(globalData);
+        simulationMode = globalData.simulationMode;
+
+
+        // set up the run time simulator
         switch (simulationMode)
         {
             case SimulationMethod.ExplicitGPU:
@@ -28,6 +38,7 @@ public class SimulationControl : MonoBehaviour
             case SimulationMethod.LocalGlobal:
                 simulationController3D.gameObject.SetActive(false);
                 simulationOptMethodController.gameObject.SetActive(true);
+                simulationOptMethodController.resolution = globalData.resolution;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.LocalGlobal;
                 break;

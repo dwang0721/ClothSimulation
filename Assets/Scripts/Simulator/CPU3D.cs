@@ -97,8 +97,8 @@ public class CPU3D: MonoBehaviour
         simulationSteps = 40;
 
         // hair date
-        nHairs = 32;
-        nNodesPerHair = 32;
+        nHairs = res;
+        nNodesPerHair = res;
         hairNodesArray = new HairNode3D[ nHairs * nNodesPerHair ];
 
         // simulation variables

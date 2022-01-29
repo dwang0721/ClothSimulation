@@ -29,7 +29,7 @@ public class Lamp : MonoBehaviour
     GameObject collider;
 
     // simulation mode
-    public SimulationMethod simulationMode = SimulationMethod.LocalGlobal;
+    public SimulationMethod simulationMode; // default to GPU
 
     // Start is called before the first frame update
     void Start()
