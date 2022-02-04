@@ -1,3 +1,5 @@
+// This script defines the "Start Simulation" button behaviors
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
@@ -21,6 +23,10 @@ public class StartSimuButton : MonoBehaviour
     void Start() {
         globalData = GameObject.FindGameObjectsWithTag("GlobalData")[0].GetComponent<GlobalData>();
         Debug.Assert(globalData);
+
+        // load the UI data and update the dropdown selection
+        updateResolutionDropDownOnUI();
+        updateSimulatornDropDownOnUI();
     }
 
     // Update is called once per frame
@@ -34,6 +40,54 @@ public class StartSimuButton : MonoBehaviour
         SceneManager.LoadScene("RT_Sample");
     }
 
+    void updateResolutionDropDownOnUI() {
+        switch (globalData.resolution) 
+        {
+            case 8:
+                resolutionDropDown.value = 0;
+                break;
+            case 10:
+                resolutionDropDown.value = 1;
+                break;
+            case 12:
+                resolutionDropDown.value = 2;
+                break;
+            case 16:
+                resolutionDropDown.value = 3;
+                break;
+            case 20:
+                resolutionDropDown.value = 4;
+                break;
+            case 24:
+                resolutionDropDown.value = 5;
+                break;
+            case 32:
+                resolutionDropDown.value = 6;
+                break;
+            case 64:
+                resolutionDropDown.value = 7;
+                break;
+            default:
+                resolutionDropDown.value = 0;
+                break;
+        }
+    }
+
+    void updateSimulatornDropDownOnUI()
+    {
+        switch (globalData.simulationMode)
+        {
+            case SimulationMethod.ExplicitGPU:
+                simulatorDropDown.value = 0;
+                break;
+            case SimulationMethod.LocalGlobal:
+                simulatorDropDown.value = 1;
+                break;
+            default:
+                simulatorDropDown.value = 0;
+                break;
+        }
+    }
 
     void updateResolutionOnGobal()
     {

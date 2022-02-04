@@ -24,9 +24,9 @@ public class CPU3D: MonoBehaviour
     public GameObject hairPrefab, colliderPrefab;
     public Lamp theLamp;
     public Texture2D weightMap;
+    public int resolution;
     //GameObject currentSelectedCollider;
 
-    static public int res;
     static public int simulationSteps;
 
     // hair nodes,  hair is a vertical line of the cloth
@@ -64,7 +64,7 @@ public class CPU3D: MonoBehaviour
     // Start is called before the first frame update
     private void Awake()
     {
-        initData();
+        
     }
 
     void Start()
@@ -74,11 +74,13 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(colliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
+        Debug.Assert(resolution > 0);
 
-        //initData();
+        initData();
         initGeo();
         initBuffer();
         initShader();
+
     }
 
     // Update is called once per frame
@@ -93,12 +95,12 @@ public class CPU3D: MonoBehaviour
     void initData()
     {
         // kernel data
-        res = 32;
         simulationSteps = 40;
 
         // hair date
-        nHairs = res;
-        nNodesPerHair = res;
+        Debug.Log(resolution);
+        nHairs = resolution;
+        nNodesPerHair = resolution;
         hairNodesArray = new HairNode3D[ nHairs * nNodesPerHair ];
 
         // simulation variables

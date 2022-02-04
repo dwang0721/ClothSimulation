@@ -1,12 +1,10 @@
-﻿using System.Collections;
+﻿//This is the run time simulation controller. The simulation properties can be updated in each frame
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-
-/*
- * This is the run time simulation controller. The simulation properties can be updated in each frame
- */
 public class SimulationControl : MonoBehaviour
 {
     public CPU3D simulationController3D;
@@ -25,13 +23,13 @@ public class SimulationControl : MonoBehaviour
         Debug.Assert(globalData);
         simulationMode = globalData.simulationMode;
 
-
         // set up the run time simulator
         switch (simulationMode)
         {
             case SimulationMethod.ExplicitGPU:
                 simulationController3D.gameObject.SetActive(true);
                 simulationOptMethodController.gameObject.SetActive(false);
+                simulationController3D.resolution = globalData.resolution;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.ExplicitGPU;
                 break;

@@ -8,7 +8,7 @@ public enum SimulationMethod { ExplicitGPU, LocalGlobal };
  * This is the static simulation controller. The simulation properties should not be updated each frame.
  * Data needs to be preserved acrossed different simulation scene:
  * 1. cloth resolution.
- * 2. simulation method.
+ * 2. Simulation method.
  */
 
 public class GlobalData : MonoBehaviour
@@ -21,7 +21,7 @@ public class GlobalData : MonoBehaviour
     {
         resolution = 10;
         simulationMode = SimulationMethod.LocalGlobal;
-        Debug.Log("sim:" + simulationMode);
+        Debug.Log("sim:" + simulationMode.ToString());
 
         GameObject[] objs = GameObject.FindGameObjectsWithTag("GlobalData");
 
