@@ -1,9 +1,9 @@
 // This script defines the behavior of the debug information.
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class DebugInfoText : MonoBehaviour
 {
@@ -12,6 +12,8 @@ public class DebugInfoText : MonoBehaviour
 
     string staticInfo = "";
     string runtimeInfo = "";
+    double timeSum = 0;
+    int frameCount = 0;
 
     // Start is called before the first frame update
     void Awake()
@@ -38,13 +40,63 @@ public class DebugInfoText : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        string deltaTime = Time.unscaledDeltaTime.ToString();
-        string fps = "" + 1.0f / Time.unscaledDeltaTime;
+        updateDebugInfoOnUI();
+
+        if (globalData.profileMode) 
+        {
+            logDebugInfoToFile();
+        }
+    }
+
+    void updateDebugInfoOnUI()
+    {
+        double deltaTime = Time.unscaledDeltaTime;
+        double fps = 1.0f / Time.unscaledDeltaTime;
 
         runtimeInfo = "";
-        runtimeInfo += "[Delta Time] \t" + deltaTime + "\n";
-        runtimeInfo += "[FPS] \t" + fps + "\n";
+        runtimeInfo += "[Delta Time] \t" + deltaTime.ToString("F2") + "\n";
+        runtimeInfo += "[FPS] \t" + fps.ToString("F2") + "\n";
 
         debugText.text = staticInfo + runtimeInfo;
+    }
+
+    void logDebugInfoToFile() 
+    {
+        if (frameCount < globalData.profileFrameMax)
+        {
+            frameCount++;
+            if (frameCount >= globalData.profileFrameMin)
+            {
+                timeSum += Time.unscaledDeltaTime;
+            }
+        }
+
+        if (frameCount == globalData.profileFrameMax)
+        {
+            double deltaTimeAvg = timeSum / globalData.profileFrameMax;
+            double fpsAvg = 1.0f / deltaTimeAvg;
+
+            string logContent = "";
+            logContent += globalData.simulationMode + "\t";
+            logContent += globalData.resolution + " x " + globalData.resolution + " : \t";
+            logContent += "Delta: " + deltaTimeAvg + ", \t" + "FPS: " + fpsAvg + "\n";
+            Debug.Log("Write to file:" + logContent + " at frame " + frameCount);
+            WriteDebugInfoToFile(logContent);
+            frameCount++;
+        }
+    }
+
+    void WriteDebugInfoToFile(string content)
+    {
+        // path of the file
+        string path = Application.dataPath + "/Log.txt";
+
+        //  create file if does not exist
+        if (!File.Exists(path))
+        {
+            File.WriteAllText(path, "Peformance Metrics \nLog date: " + System.DateTime.Now + "\n\n");
+        }
+
+        File.AppendAllText(path, content);
     }
 }

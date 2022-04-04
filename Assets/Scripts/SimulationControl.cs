@@ -23,6 +23,8 @@ public class SimulationControl : MonoBehaviour
         Debug.Assert(globalData);
         simulationMode = globalData.simulationMode;
 
+        Debug.Log("New Simlator: " + globalData.simulationMode + ";\t" + globalData.resolution );
+
         // set up the run time simulator
         switch (simulationMode)
         {
@@ -111,7 +113,7 @@ public class SimulationControl : MonoBehaviour
             SliderBendingStiffness.gameObject.SetActive(false);
             SliderFriction.gameObject.SetActive(false);
 
-            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, 0.3f);
+            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, 0.5f);
             LightAngle.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightAngle, 1.0f, 45.0f);
         }
     }

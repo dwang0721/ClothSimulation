@@ -1,0 +1,4 @@
+Peformance Metrics 
+Log date: 2022-02-05 12:29:49 PM
+
+LocalGlobal	10 x 10 : 	Delta: 0.0222383898993333, 	FPS: 19.9795003462458
