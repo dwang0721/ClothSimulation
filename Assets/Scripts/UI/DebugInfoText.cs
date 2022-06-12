@@ -42,6 +42,7 @@ public class DebugInfoText : MonoBehaviour
     {
         updateDebugInfoOnUI();
 
+        Debug.Log("globalData.prifileMode " + globalData.profileMode);
         if (globalData.profileMode) 
         {
             logDebugInfoToFile();

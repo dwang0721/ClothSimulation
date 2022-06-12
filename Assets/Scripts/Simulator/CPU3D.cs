@@ -280,8 +280,8 @@ public class CPU3D: MonoBehaviour
 
     void simulationOnGPU() 
     {
-        int nThreadGrpsX = 1;
-        int nThreadGrpsY = 1;
+        int nThreadGrpsX = 2;
+        int nThreadGrpsY = 2;
 
         // set buffer data from collider
         colliderBuffer.SetData(colliderNodeArrays);

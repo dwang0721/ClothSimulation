@@ -1,7 +1,7 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 // Learning reference: https://www.reddit.com/r/Unity3D/comments/7ppldz/physics_simulation_on_gpu_with_compute_shader_in/
 
-// same struct 
+// This compute shader sample each node weight from texture.
 struct HairNode3D
 {
     float x, y, z;
