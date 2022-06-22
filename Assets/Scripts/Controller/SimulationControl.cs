@@ -32,6 +32,7 @@ public class SimulationControl : MonoBehaviour
                 simulationController3D.gameObject.SetActive(true);
                 simulationOptMethodController.gameObject.SetActive(false);
                 simulationController3D.resolution = globalData.resolution;
+                simulationController3D.clothDebugNodeSize = globalData.clothDebugNodeSize;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.ExplicitGPU;
                 break;
@@ -39,6 +40,7 @@ public class SimulationControl : MonoBehaviour
                 simulationController3D.gameObject.SetActive(false);
                 simulationOptMethodController.gameObject.SetActive(true);
                 simulationOptMethodController.resolution = globalData.resolution;
+                simulationOptMethodController.clothDebugNodeSize = globalData.clothDebugNodeSize;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.LocalGlobal;
                 break;

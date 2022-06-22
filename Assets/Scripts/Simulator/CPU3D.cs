@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using UnityEngine;
 
-public struct HairNode3D 
+public struct HairNode3D
 {
     public float x, y, z;
     public float vx, vy, vz;
     public int ax, ay, az;
-    public float mass;
+    public float mass; 
+    public int dummy1, dummy2;
 }
 
 public struct ColliderNode3D
 {
     public float x, y, z, r;
     public int ax, ay, az;
-    public int dummy;
+    public int dummy1;
 }
 
 public class CPU3D: MonoBehaviour
@@ -25,6 +26,8 @@ public class CPU3D: MonoBehaviour
     public Lamp theLamp;
     public Texture2D weightMap;
     public int resolution;
+    public ClothMeshGenerator clothMesh;
+    public float clothDebugNodeSize;
     //GameObject currentSelectedCollider;
 
     static public int simulationSteps;
@@ -61,12 +64,6 @@ public class CPU3D: MonoBehaviour
     // buffer is an array
     ComputeBuffer hairNodeBuffer, colliderBuffer;
 
-    // Start is called before the first frame update
-    private void Awake()
-    {
-        
-    }
-
     void Start()
     {
         Debug.Assert(shader);
@@ -75,12 +72,14 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
         Debug.Assert(resolution > 0);
+        Debug.Assert(clothDebugNodeSize > 0);
+        Debug.Assert(clothMesh);
 
         initData();
         initGeo();
         initBuffer();
         initShader();
-
+        initClothMesh();
     }
 
     // Update is called once per frame
@@ -88,7 +87,7 @@ public class CPU3D: MonoBehaviour
     {
         simulationOnGPU();
         updateHairGeoPositions();
-        updateHairGeoPositions();
+        updateClothMesh();
         updateDataFromCollider();
     }
 
@@ -97,8 +96,7 @@ public class CPU3D: MonoBehaviour
         // kernel data
         simulationSteps = 40;
 
-        // hair date
-        Debug.Log(resolution);
+        // hair data
         nHairs = resolution;
         nNodesPerHair = resolution;
         hairNodesArray = new HairNode3D[ nHairs * nNodesPerHair ];
@@ -139,7 +137,7 @@ public class CPU3D: MonoBehaviour
                 // sample the weight from the weight map
                 float u = i * 1.0f / (nHairs);
                 float v = 1.0f - j * 1.0f / (nNodesPerHair);                
-                hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;              
+                hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
             }                
         }
 
@@ -166,7 +164,8 @@ public class CPU3D: MonoBehaviour
         for (int i = 0; i < hairGeos.Length; i++)
         {
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
-            var newitem = Instantiate(hairPrefab, location, Quaternion.identity);            
+            var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
+            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
             hairGeos[i] = newitem;
         }
 
@@ -181,9 +180,14 @@ public class CPU3D: MonoBehaviour
         }
     }
 
+    void initClothMesh()
+    {
+        clothMesh.initMeshExplict(hairNodesArray, nHairs, nNodesPerHair);
+    }
+
     void initBuffer()
     {
-        hairNodeBuffer = new ComputeBuffer(hairNodesArray.Length, 4*10); // 4 byte for float or int, 9 items
+        hairNodeBuffer = new ComputeBuffer(hairNodesArray.Length, 4*12); // 4 byte for float or int, 10 items
         hairNodeBuffer.SetData(hairNodesArray);
         colliderBuffer = new ComputeBuffer(nColliders, 4*8);
         colliderBuffer.SetData(colliderNodeArrays);
@@ -298,11 +302,9 @@ public class CPU3D: MonoBehaviour
 
         // set data to collider
         colliderBuffer.GetData(colliderNodeArrays);
-        //Debug.Log("{" + colliderNodeArrays[0].x + ", " + colliderNodeArrays[0].y + ", " + colliderNodeArrays[0].z + ", " + colliderNodeArrays[0].r + "}");
 
         // set data to hairNode
         hairNodeBuffer.GetData(hairNodesArray);
-        //Debug.Log( hairNodesArray[2].d1 + ", " + hairNodesArray[2].d2 + ", " + hairNodesArray[2].d3);
     }
 
     void updateHairGeoPositions()
@@ -312,6 +314,11 @@ public class CPU3D: MonoBehaviour
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
             hairGeos[i].transform.position = location;
         }
+    }
+
+    void updateClothMesh()
+    {
+        clothMesh.updateMeshExplict(hairNodesArray);
     }
 
     void updateDataFromCollider()
@@ -327,8 +334,6 @@ public class CPU3D: MonoBehaviour
             colliderNodeArrays[i].ay = 0;
             colliderNodeArrays[i].az = 0;
         }
-
-        //Debug.Log(colliderNodeArrays[0].x + ", " + colliderNodeArrays[0].y + ", " + colliderNodeArrays[0].z);
     }
 
     void OnDestroy()

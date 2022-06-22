@@ -8,13 +8,14 @@ struct HairNode3D
     float vx, vy, vz;
     int ax, ay, az;
     float mass;
+    int dummy1, dummy2;
 };
 
 struct ColliderNode3D
 {
     float x, y, z, r;
     int ax, ay, az;
-    int dummy1, dummy2;
+    int dummy1;
 };
 
 int nNodesPerHair;

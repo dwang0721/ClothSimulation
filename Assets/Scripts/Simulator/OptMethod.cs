@@ -72,6 +72,8 @@ public class OptMethod : MonoBehaviour
     public Texture2D weightMap;
     public int LightIntensityMutiplier = 10;
     public int resolution = 10;
+    public ClothMeshGenerator clothMesh;
+    public float clothDebugNodeSize;
 
     // Cloth vertex Data Structure.
     static GameObject[] clothVertArray;
@@ -107,21 +109,24 @@ public class OptMethod : MonoBehaviour
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
         Debug.Assert(resolution > 0);
+        Debug.Assert(clothDebugNodeSize > 0);
+        Debug.Assert(clothMesh);
 
         initData();
-        initGeo();
-        //codeMatrixExample(); 
+        initClothVertices();
+        initClothMesh();
     }
 
     // Update is called once per frame
     void Update()
     {
         tickSimulation();
-        updateClothVertexPositions();
+        updateClothVertices();
+        updateClothMesh();
     }
 
     //////////////////////////// Cloth Initialization ////////////////////////////
-    void initGeo()
+    void initClothVertices()
     {
         // instantiate hair objects
         clothVertArray = new GameObject[nHairs * nNodesPerHair];
@@ -144,6 +149,16 @@ public class OptMethod : MonoBehaviour
             newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
             colliderGeos[i] = newitem;
         }
+    }
+
+    void initClothMesh()
+    {
+        clothMesh.initMeshImplicit(ClothSimImp.curr_p, nHairs, nNodesPerHair);
+    }
+
+    void updateClothMesh()
+    {
+        clothMesh.updateMeshImplict(ClothSimImp.curr_p);
     }
 
     void initData()
@@ -276,8 +291,6 @@ public class OptMethod : MonoBehaviour
 
     void implicitEulerSimulationMethod()
     {
-
-
         // CalculateInteria component y = 2 * P_current - P_previous
         LocalGlobal_update_inertiaY();      
 
@@ -367,7 +380,7 @@ public class OptMethod : MonoBehaviour
 
 
     //////////////////////////// Cloth data run time update ////////////////////////////
-    void updateClothVertexPositions()
+    void updateClothVertices()
     {
         for (int i = 0; i < nHairs; i++)
         {
@@ -495,7 +508,7 @@ public class OptMethod : MonoBehaviour
     public void updateNodeDistance(float value)
     {
         nodeDistance = value;
-        //if (ClothSimImp.pinConstraint == null) { return; }
+        if (ClothSimImp.pinConstraint == null) { return; }
         for (int i = 0; i < ClothSimImp.pinConstraint.Length; i++) // update the pinned node position.
         {
             int nodeIndex = ClothSimImp.pinConstraint[i].m_v0;

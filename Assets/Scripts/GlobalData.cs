@@ -4,7 +4,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public enum SimulationMethod { ExplicitGPU, LocalGlobal };
+public enum SimulationMethod 
+{   
+    ExplicitGPU, 
+    LocalGlobal 
+};
+
+public enum RenderMode
+{
+    Node,
+    Mesh
+}
 
 /*
  * This is the static simulation controller. The simulation properties should not be updated each frame.
@@ -19,6 +29,8 @@ public class GlobalData : MonoBehaviour
     // Start is called before the first frame update
     public int resolution = 10;
     public SimulationMethod simulationMode = SimulationMethod.LocalGlobal; // default to GPU
+    public RenderMode renderMode = RenderMode.Mesh;
+    public float clothDebugNodeSize = 0.3f;
 
     // profiling metrics setting
     public bool profileMode = false; // should start measuring the performance
