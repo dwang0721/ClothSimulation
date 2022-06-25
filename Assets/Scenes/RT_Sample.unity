@@ -825,10 +825,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 693c5420b9098954795b8f66b856086d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resolution: 10
-  simulationMode: 1
+  resolution: 16
+  simulationMode: 0
   renderMode: 1
-  clothDebugNodeSize: 0.3
+  clothDebugNodeSize: 0.15
   profileMode: 0
   profileFrameMin: 10
   profileFrameMax: 60

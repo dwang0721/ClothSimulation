@@ -9,7 +9,8 @@ public struct HairNode3D
     public float vx, vy, vz;
     public int ax, ay, az;
     public float mass; 
-    public int dummy1, dummy2;
+    public float nx, ny, nz;
+    public int dummy1, dummy2, dummy3;
 }
 
 public struct ColliderNode3D
@@ -187,7 +188,7 @@ public class CPU3D: MonoBehaviour
 
     void initBuffer()
     {
-        hairNodeBuffer = new ComputeBuffer(hairNodesArray.Length, 4*12); // 4 byte for float or int, 10 items
+        hairNodeBuffer = new ComputeBuffer(hairNodesArray.Length, 4*16); // 4 byte for float or int, 10 items
         hairNodeBuffer.SetData(hairNodesArray);
         colliderBuffer = new ComputeBuffer(nColliders, 4*8);
         colliderBuffer.SetData(colliderNodeArrays);

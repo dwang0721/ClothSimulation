@@ -8,7 +8,8 @@ struct HairNode3D
     float vx, vy, vz;
     int ax, ay, az;
     float mass;
-    int dummy1, dummy2;
+    float nx, ny, nz;
+    int dummy1, dummy2, dummy3;
 };
 
 struct ColliderNode3D
@@ -295,6 +296,9 @@ void EulerKernel(uint3 id : SV_DispatchThreadID)
         hairNodeBuffer[currIndex].ax = 0;
         hairNodeBuffer[currIndex].ay = 0;
         hairNodeBuffer[currIndex].az = 0;
+        hairNodeBuffer[currIndex].nx = 0;
+        hairNodeBuffer[currIndex].ny = 0;
+        hairNodeBuffer[currIndex].nz = 1;
         return;
     }
 
@@ -319,4 +323,42 @@ void EulerKernel(uint3 id : SV_DispatchThreadID)
     hairNodeBuffer[currIndex].vx *= velocityDecay;
     hairNodeBuffer[currIndex].vy *= velocityDecay;
     hairNodeBuffer[currIndex].vz *= velocityDecay;
+
+    // update normals
+    float3 compute_normal = float3 (0, 0, 0);
+
+    if (id.x == nHairs-1 || id.x == 0 || id.y == nNodesPerHair - 1 || id.y == 0) {
+        hairNodeBuffer[currIndex].nx = 0;
+        hairNodeBuffer[currIndex].ny = 0;
+        hairNodeBuffer[currIndex].nz = 1;
+    }else {
+        float3 right = float3 ( hairNodeBuffer[currIndex + 1].x - hairNodeBuffer[currIndex].x,
+                                hairNodeBuffer[currIndex + 1].y - hairNodeBuffer[currIndex].y,
+                                hairNodeBuffer[currIndex + 1].z - hairNodeBuffer[currIndex].z);
+        float3 up =    float3 ( hairNodeBuffer[currIndex - nNodesPerHair].x - hairNodeBuffer[currIndex].x,
+                                hairNodeBuffer[currIndex - nNodesPerHair].y - hairNodeBuffer[currIndex].y,
+                                hairNodeBuffer[currIndex - nNodesPerHair].z - hairNodeBuffer[currIndex].z);
+        float3 left = float3 (  hairNodeBuffer[currIndex - 1].x - hairNodeBuffer[currIndex].x,
+                                hairNodeBuffer[currIndex - 1].y - hairNodeBuffer[currIndex].y,
+                                hairNodeBuffer[currIndex - 1].z - hairNodeBuffer[currIndex].z);
+        float3 down = float3 (  hairNodeBuffer[currIndex + nNodesPerHair].x - hairNodeBuffer[currIndex].x,
+                                hairNodeBuffer[currIndex + nNodesPerHair].y - hairNodeBuffer[currIndex].y,
+                                hairNodeBuffer[currIndex + nNodesPerHair].z - hairNodeBuffer[currIndex].z);
+
+        right = normalize(right);
+        up = normalize(up);
+        left = normalize(left);
+        down = normalize(down);
+
+        float3 norm_0 = normalize(cross(right, up));
+        float3 norm_1 = normalize(cross(up, left));
+        float3 norm_2 = normalize(cross(left, down));
+        float3 norm_3 = normalize(cross(down, right));
+
+        compute_normal = normalize(norm_0 + norm_1 + norm_2 + norm_3);
+
+        hairNodeBuffer[currIndex].nx = compute_normal.x;
+        hairNodeBuffer[currIndex].ny = compute_normal.y;
+        hairNodeBuffer[currIndex].nz = compute_normal.z;
+    }
 }

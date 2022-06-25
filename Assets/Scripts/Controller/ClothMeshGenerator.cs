@@ -180,12 +180,15 @@ public class ClothMeshGenerator : MonoBehaviour
 
         int nVertices = clothResolutionX * clothResolutionY;
         Vector3[] vert = new Vector3[nVertices];
+        Vector3[] norm = new Vector3[nVertices];
         for (int i = 0; i < nVertices; i++)
         {
             vert[i] = new Vector3(clothNodesArray[i].x, clothNodesArray[i].y, clothNodesArray[i].z);
+            norm[i] = new Vector3(clothNodesArray[i].nx, clothNodesArray[i].ny, clothNodesArray[i].nz);
         }
 
         clothMesh.vertices = vert;
+        clothMesh.normals = norm;
     }
 
     public void updateMeshImplict(Matrix<double> position)
