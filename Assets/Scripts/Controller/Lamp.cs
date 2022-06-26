@@ -138,10 +138,10 @@ public class Lamp : MonoBehaviour
         viewingAngle = angle;
     }
 
-    public void setLightColor(float intensity)
+    public void setLightColor(float intensity, float MaxIntesity)
     {
         Light spotLight = GameObject.Find("Spot Light").GetComponent<Light>();
-        float lerp = intensity / 0.3f ;
+        float lerp = intensity / MaxIntesity;
         spotLight.color = Color.red* lerp + Color.green * (1- lerp);
     }
 

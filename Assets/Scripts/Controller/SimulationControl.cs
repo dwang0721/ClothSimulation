@@ -16,6 +16,10 @@ public class SimulationControl : MonoBehaviour
 
     GlobalData globalData;
 
+    // some values
+    float lightMaxIntensityImplict = 0.3f;
+    float lightMaxIntensityExplicit = 0.5f;
+
     private void Awake()
     {
         // take data from the global setting
@@ -74,7 +78,7 @@ public class SimulationControl : MonoBehaviour
             SliderFriction.onValueChanged.AddListener(delegate { simulationController3D.updateFriction(SliderFriction.value); });
 
             LightIntensity.onValueChanged.AddListener(delegate { simulationController3D.updatelightForce(LightIntensity.value); });
-            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value); });
+            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityImplict); });
             LightAngle.onValueChanged.AddListener(delegate { simulationController3D.updatelightAngle(LightAngle.value); });
             LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
         }
@@ -84,7 +88,7 @@ public class SimulationControl : MonoBehaviour
             SliderGravity.onValueChanged.AddListener(delegate { simulationOptMethodController.updateGravity(SliderGravity.value); });
 
             LightIntensity.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightForce(LightIntensity.value); });
-            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value); });
+            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityExplicit); });
             LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
             LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
         }
@@ -104,7 +108,7 @@ public class SimulationControl : MonoBehaviour
             SliderBendingStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.bendingStiffness, 0.01f, 0.5f);
             SliderFriction.GetComponent<UpdateValue>().updateSliderBar(CPU3D.velocityDecay, 0.998f, 0.9999f);
 
-            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightForce, 0.0f, 0.3f);
+            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightForce, 0.0f, lightMaxIntensityImplict);
             LightAngle.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightAngle, 1.0f, 45.0f);
         }
         else {
@@ -115,7 +119,7 @@ public class SimulationControl : MonoBehaviour
             SliderBendingStiffness.gameObject.SetActive(false);
             SliderFriction.gameObject.SetActive(false);
 
-            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, 0.5f);
+            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, lightMaxIntensityExplicit);
             LightAngle.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightAngle, 1.0f, 45.0f);
         }
     }

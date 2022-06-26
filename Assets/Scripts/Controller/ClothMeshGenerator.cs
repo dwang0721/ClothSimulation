@@ -199,6 +199,7 @@ public class ClothMeshGenerator : MonoBehaviour
 
         int nVertices = clothResolutionX * clothResolutionY;
         Vector3[] vert = new Vector3[nVertices];
+        Vector3[] norm = new Vector3[nVertices];
         for (int i = 0; i < nVertices; i++)
         {
             vert[i] = new Vector3((float)(position.At(3 * i, 0)),
@@ -206,6 +207,35 @@ public class ClothMeshGenerator : MonoBehaviour
                                   (float)(position.At(3 * i + 2, 0)));
         }
 
+        for (int i = 0; i < nVertices; i++) {
+            Vector3 compute_normal = new Vector3(0, 0, 1);
+
+            int idx = i % clothResolutionX;
+            int idy = i / clothResolutionX;
+
+            if (idx == clothResolutionX - 1 || idx == 0 || idy == clothResolutionY - 1 || idy == 0)
+            {
+                norm[i] = compute_normal;
+            }
+            else
+            {
+                Vector3 right = (vert[i + 1] - vert[i]).normalized;
+                Vector3 up = (vert[i - clothResolutionX] - vert[i]).normalized;
+                Vector3 left = (vert[i - 1] - vert[i]).normalized;
+                Vector3 down = (vert[i + clothResolutionX] - vert[i]).normalized;
+
+                Vector3 norm_0 = Vector3.Cross(right, up).normalized;
+                Vector3 norm_1 = Vector3.Cross(up, left).normalized;
+                Vector3 norm_2 = Vector3.Cross(left, down).normalized;
+                Vector3 norm_3 = Vector3.Cross(down, right).normalized;
+
+                compute_normal = (norm_0 + norm_1 + norm_2 + norm_3).normalized;
+                norm[i] = compute_normal;
+            }
+        }
+
         clothMesh.vertices = vert;
+        clothMesh.normals = norm;
+
     }
 }
