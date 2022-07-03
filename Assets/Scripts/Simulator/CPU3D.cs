@@ -143,7 +143,7 @@ public class CPU3D: MonoBehaviour
         }
 
         // collider data
-        nColliders = 1;
+        nColliders = 3;
         colliderRadius = 2.5f;
         colliderNodeArrays = new ColliderNode3D[nColliders];
         for (int i = 0; i < nColliders; i++)
@@ -334,6 +334,9 @@ public class CPU3D: MonoBehaviour
             colliderNodeArrays[i].ax = 0;
             colliderNodeArrays[i].ay = 0;
             colliderNodeArrays[i].az = 0;
+
+            // assuming the sphere scale is double of the radius.
+            colliderNodeArrays[i].r = colliderGeos[i].transform.localScale.x / 2.0f;
         }
     }
 
