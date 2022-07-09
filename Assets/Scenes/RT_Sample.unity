@@ -699,9 +699,9 @@ MonoBehaviour:
     Collider Left/Right:   
     Click + Drag
 
-    Collider Back/Forth:  Ctrl + Click + Drag
+    Collider Back/Forth: Ctrl + Click + Drag
 
-    Collider Radius:         
+    Collider Radius:        
     Click + Scroll'
 --- !u!222 &223939727
 CanvasRenderer:

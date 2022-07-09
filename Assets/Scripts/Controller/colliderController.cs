@@ -58,7 +58,6 @@ public class colliderController : MonoBehaviour
             Debug.Assert(transform.localScale.x == transform.localScale.y);
             Debug.Assert(transform.localScale.y == transform.localScale.z);
             transform.localScale = new Vector3( Input.mouseScrollDelta.y + transform.localScale.x, Input.mouseScrollDelta.y + transform.localScale.y, Input.mouseScrollDelta.y + transform.localScale.z);
-            Debug.Log(transform.localScale);
         }
 
         Vector3 currentScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);
