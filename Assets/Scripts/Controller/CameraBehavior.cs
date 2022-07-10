@@ -41,9 +41,7 @@ public class CameraBehavior : MonoBehaviour
             if (cameraDotWorldUp >= threshold && y < 0.0f) return;
             if (cameraDotWorldUp <= -threshold && y > 0.0f) return;
             Tumble(-y, transform.right);
-
-            Tumble(x, transform.up);    
-            
+            Tumble(x, transform.up);
         }
     }
 

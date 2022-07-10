@@ -9,7 +9,7 @@ struct HairNode3D
     int ax, ay, az;
     float mass;
     float nx, ny, nz;
-    int dummy1, dummy2, dummy3;
+    int isPinned, dummy2, dummy3;
 };
 
 struct ColliderNode3D
@@ -55,6 +55,7 @@ void LightKernel(uint3 id : SV_DispatchThreadID)
     {
         return;
     }
+
     // find the nodes from the buffer
     int currIndex = id.x * nNodesPerHair + id.y;
     HairNode3D curr = hairNodeBuffer[currIndex];
@@ -288,20 +289,25 @@ void EulerKernel(uint3 id : SV_DispatchThreadID)
     HairNode3D curr = hairNodeBuffer[currIndex];
 
     // force the first row of nodes to be static
-    if (id.y == 0)
+    //if (id.y == 0)
+    //{
+    //    hairNodeBuffer[currIndex].x = nodeDistance * ((int)id.x - nHairs / 2);
+    //    hairNodeBuffer[currIndex].y = -nodeDistance * ((int)id.y - nNodesPerHair / 2);
+    //    hairNodeBuffer[currIndex].z = 0;
+    //    hairNodeBuffer[currIndex].vx = 0;
+    //    hairNodeBuffer[currIndex].vy = 0;
+    //    hairNodeBuffer[currIndex].vz = 0;
+    //    hairNodeBuffer[currIndex].ax = 0;
+    //    hairNodeBuffer[currIndex].ay = 0;
+    //    hairNodeBuffer[currIndex].az = 0;
+    //    updateNormals(id);
+    //    return;
+    //}
+
+    // Not affect the Pinned Node
+    if (hairNodeBuffer[currIndex].isPinned != 0)
     {
-        hairNodeBuffer[currIndex].x = nodeDistance * ((int)id.x - nHairs / 2);
-        hairNodeBuffer[currIndex].y = -nodeDistance * ((int)id.y - nNodesPerHair / 2);
-        hairNodeBuffer[currIndex].z = 0;
-        hairNodeBuffer[currIndex].vx = 0;
-        hairNodeBuffer[currIndex].vy = 0;
-        hairNodeBuffer[currIndex].vz = 0;
-        hairNodeBuffer[currIndex].ax = 0;
-        hairNodeBuffer[currIndex].ay = 0;
-        hairNodeBuffer[currIndex].az = 0;
-        hairNodeBuffer[currIndex].nx = 0;
-        hairNodeBuffer[currIndex].ny = 0;
-        hairNodeBuffer[currIndex].nz = 1;
+        updateNormals(id);
         return;
     }
 

@@ -10,7 +10,7 @@ public struct HairNode3D
     public int ax, ay, az;
     public float mass; 
     public float nx, ny, nz;
-    public int dummy1, dummy2, dummy3;
+    public int isPinned, dummy2, dummy3;
 }
 
 public struct ColliderNode3D
@@ -139,6 +139,16 @@ public class CPU3D: MonoBehaviour
                 float u = i * 1.0f / (nHairs);
                 float v = 1.0f - j * 1.0f / (nNodesPerHair);                
                 hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
+
+                // first row is intialized as pinned node
+                if (j == 0)
+                {
+                    hairNodesArray[nodeIndex].isPinned = 1;
+                }
+                else 
+                {
+                    hairNodesArray[nodeIndex].isPinned = 0;
+                }
             }                
         }
 
@@ -166,7 +176,9 @@ public class CPU3D: MonoBehaviour
         {
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
             var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
-            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
+            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;       
+            newitem.GetComponent<NodeController>().setNodeIndex(i);
+            newitem.GetComponent<NodeController>().setIsPinned(hairNodesArray[i].isPinned);
             hairGeos[i] = newitem;
         }
 
@@ -243,6 +255,11 @@ public class CPU3D: MonoBehaviour
         shader.SetFloat("lightAngle", lightAngle);
     }
 
+    public void setHairNodesPinStatusAtIndex(int index, int pinStatus)
+    {
+        hairNodesArray[index].isPinned = pinStatus;
+    }
+
     void initShader() 
     {
         shader.SetInt("nNodesPerHair", nNodesPerHair);
@@ -287,6 +304,9 @@ public class CPU3D: MonoBehaviour
     {
         int nThreadGrpsX = 2;
         int nThreadGrpsY = 2;
+
+        // set node data
+        hairNodeBuffer.SetData(hairNodesArray);
 
         // set buffer data from collider
         colliderBuffer.SetData(colliderNodeArrays);

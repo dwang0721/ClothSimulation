@@ -12,9 +12,6 @@ GameObject:
   - component: {fileID: 1564771071751650684}
   - component: {fileID: 794938815140033721}
   - component: {fileID: 5943481858339471852}
-  - component: {fileID: -8903197337029994779}
-  - component: {fileID: 9179202472384276433}
-  - component: {fileID: 6089497856981755565}
   - component: {fileID: 8180639753405499337}
   m_Layer: 0
   m_Name: colliderNode
@@ -56,6 +53,7 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
@@ -99,51 +97,6 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-8903197337029994779
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7765864190364122376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66502c823bf4a4d5185569b16d96f26b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  geometry: {fileID: 9179202472384276433}
-  material: {fileID: 6089497856981755565}
---- !u!114 &9179202472384276433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7765864190364122376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab0fbb3fe1c33404891d1bb5f1b8c067, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  intersectShaderGUID: 75adbc1b-9bc6-424a-919d-0bb40827bc61
-  sphereData:
-    center: {x: 0, y: 0, z: 0}
-    radius: 2.5
---- !u!114 &6089497856981755565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7765864190364122376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45d0688cf0b774947a3fd4f24e2e4483, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  closestHitGUID: 1a245b97-ee6f-4385-936d-6d8529111bfe
-  color: {r: 0, g: 0, b: 0, a: 0}
-  main: {fileID: 2800000, guid: f1f9d53e6ae33b94e998e73ab817838c, type: 3}
 --- !u!114 &8180639753405499337
 MonoBehaviour:
   m_ObjectHideFlags: 0

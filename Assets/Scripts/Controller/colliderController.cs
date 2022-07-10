@@ -19,20 +19,21 @@ public class colliderController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!Input.GetKey(KeyCode.LeftAlt) && Input.GetMouseButtonDown(0)) {
-            RaycastHit hit;
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        //// Not in camera rotation mode, and the collider is clicked.
+        //if (!Input.GetKey(KeyCode.LeftAlt) && Input.GetMouseButtonDown(0)) {
+        //    RaycastHit hit;
+        //    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-            if (Physics.Raycast(ray, out hit)) {
-                GameObject hitObj = hit.collider.gameObject;
-                if (hitObj.tag == "Collider" && hitObj == gameObject) {
-                    screenPoint = Camera.main.WorldToScreenPoint(transform.position);
-                    offset = transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z)); ;
-                    isSelected = true;
-                    gameObject.GetComponent<Renderer>().material.color = new Color(0.8f, 0, 0, 1);
-                }
-            }
-        }
+        //    if (Physics.Raycast(ray, out hit)) {
+        //        GameObject hitObj = hit.collider.gameObject;
+        //        if (hitObj.tag == "Collider" && hitObj == gameObject) {
+        //            screenPoint = Camera.main.WorldToScreenPoint(transform.position);
+        //            offset = transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z)); ;
+        //            isSelected = true;
+        //            gameObject.GetComponent<Renderer>().material.color = new Color(0.8f, 0, 0, 1);
+        //        }
+        //    }
+        //}
 
         if (Input.GetMouseButtonUp(0)) {
             isSelected = false;
@@ -40,6 +41,14 @@ public class colliderController : MonoBehaviour
         }
 
         updatePosition();
+    }
+
+    public void setColliderStatusOnClick()
+    {
+        screenPoint = Camera.main.WorldToScreenPoint(transform.position);
+        offset = transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
+        isSelected = true;
+        gameObject.GetComponent<Renderer>().material.color = new Color(0.8f, 0, 0, 1);
     }
 
     void updatePosition() {
