@@ -36,6 +36,7 @@ public class SimulationControl : MonoBehaviour
                 simulationController3D.gameObject.SetActive(true);
                 simulationOptMethodController.gameObject.SetActive(false);
                 simulationController3D.resolution = globalData.resolution;
+                simulationController3D.isFreefallMode = globalData.isFreeFallMode;
                 simulationController3D.clothDebugNodeSize = globalData.clothDebugNodeSize;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.ExplicitGPU;

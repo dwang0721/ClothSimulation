@@ -31,6 +31,7 @@ float gravity;
 float stiffness;
 float maxTravelDistance;
 float bendingStiffness;
+float planeColliderPosY;
 
 float lightForce;
 float lightAngle;
@@ -38,7 +39,8 @@ float4 headPos;
 float4 headLookAtPos;
 
 int floatToInt;
-float intToFloat; 
+float intToFloat;
+int resetPinnedNodeDistanceFlag;
 
 // one dimentional array
 RWStructuredBuffer<HairNode3D> hairNodeBuffer;
@@ -272,7 +274,25 @@ void CollisionKernel(uint3 id : SV_DispatchThreadID)
                 colliderBuffer[i].ay += 1000 * tangentVel.y;
                 colliderBuffer[i].az += 1000 * tangentVel.z;
             }
+
+            hairNodeBuffer[currIndex].vx *= 0.5f;
+            hairNodeBuffer[currIndex].vy *= 0.5f;
+            hairNodeBuffer[currIndex].vz *= 0.5f;
+            hairNodeBuffer[currIndex].ax *= 0.5f;
+            hairNodeBuffer[currIndex].ay *= 0.5f;
+            hairNodeBuffer[currIndex].az *= 0.5f;
         }
+    }
+
+    if (hairNodeBuffer[currIndex].y < planeColliderPosY)
+    {
+        hairNodeBuffer[currIndex].y = planeColliderPosY;
+        hairNodeBuffer[currIndex].vx *= 0.5f;
+        hairNodeBuffer[currIndex].vy *= 0.5f;
+        hairNodeBuffer[currIndex].vz *= 0.5f;
+        hairNodeBuffer[currIndex].ax *= 0.5f;
+        hairNodeBuffer[currIndex].ay *= 0.5f;
+        hairNodeBuffer[currIndex].az *= 0.5f;
     }
 }
 
@@ -307,6 +327,18 @@ void EulerKernel(uint3 id : SV_DispatchThreadID)
     // Not affect the Pinned Node
     if (hairNodeBuffer[currIndex].isPinned != 0)
     {
+        if (resetPinnedNodeDistanceFlag)
+        {
+            hairNodeBuffer[currIndex].x = nodeDistance * ((int)id.x - nHairs / 2);
+            hairNodeBuffer[currIndex].y = -nodeDistance * ((int)id.y - nNodesPerHair / 2);
+            hairNodeBuffer[currIndex].z = 0;
+            hairNodeBuffer[currIndex].vx = 0;
+            hairNodeBuffer[currIndex].vy = 0;
+            hairNodeBuffer[currIndex].vz = 0;
+            hairNodeBuffer[currIndex].ax = 0;
+            hairNodeBuffer[currIndex].ay = 0;
+            hairNodeBuffer[currIndex].az = 0;
+        }
         updateNormals(id);
         return;
     }

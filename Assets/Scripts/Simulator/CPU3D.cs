@@ -23,13 +23,13 @@ public struct ColliderNode3D
 public class CPU3D: MonoBehaviour
 {
     public ComputeShader shader;    
-    public GameObject hairPrefab, colliderPrefab;
+    public GameObject hairPrefab, sphereColliderPrefab, planeColliderPrefab;
     public Lamp theLamp;
     public Texture2D weightMap;
     public int resolution;
+    public bool isFreefallMode;
     public ClothMeshGenerator clothMesh;
     public float clothDebugNodeSize;
-    //GameObject currentSelectedCollider;
 
     static public int simulationSteps;
 
@@ -38,12 +38,16 @@ public class CPU3D: MonoBehaviour
     static HairNode3D[] hairNodesArray;    
     static GameObject[] hairGeos;
 
-    // colliders
+    // sphere colliders
     static public int nColliders;
     static public float colliderRadius;
     static ColliderNode3D[] colliderNodeArrays;
     static public GameObject[] colliderGeos;
 
+    // plane collider
+    static public float planeColliderPosY = 0;
+
+    // simulation parameters
     public static float nodeDistance;
     static float dPosition;             // speed ratio for euler's method
     static float dVelocity;             // force ratio for euler's method
@@ -59,6 +63,8 @@ public class CPU3D: MonoBehaviour
     public static Vector3 headPos;
     public static Vector3 headLookAtPos;
 
+    public static int resetPinnedNodeDistanceFlag;
+
     // kernel
     int forceKernel, lightKernel, velocityKernel, collisionKernel, eulerKernel;
 
@@ -69,7 +75,8 @@ public class CPU3D: MonoBehaviour
     {
         Debug.Assert(shader);
         Debug.Assert(hairPrefab);
-        Debug.Assert(colliderPrefab);
+        Debug.Assert(sphereColliderPrefab);
+        Debug.Assert(planeColliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
         Debug.Assert(resolution > 0);
@@ -119,15 +126,36 @@ public class CPU3D: MonoBehaviour
         headPos = theLamp.head.transform.position;
         headLookAtPos = theLamp.headLookAt;
 
+        // a flag deciding if the node distance to affect the pinned node
+        resetPinnedNodeDistanceFlag = 0;
+
         // nodes data
         for (int i = 0; i < nHairs; i++)
         {
             for (int j = 0; j < nNodesPerHair; j++)
             {
                 int nodeIndex = i * nNodesPerHair + j;
-                hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs/2);
-                hairNodesArray[nodeIndex].y = - nodeDistance * (j - nNodesPerHair/2);
-                hairNodesArray[nodeIndex].z = 0.0f;
+
+                hairNodesArray[nodeIndex].isPinned = 0;
+
+                if (isFreefallMode)
+                {
+                    hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
+                    hairNodesArray[nodeIndex].y = 0.0f;
+                    hairNodesArray[nodeIndex].z = -nodeDistance * (j - nNodesPerHair / 2);
+                }
+                else {
+                    hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
+                    hairNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
+                    hairNodesArray[nodeIndex].z = 0.0f;
+
+                    // first row is intialized as pinned node
+                    if (j == 0)
+                    {
+                        hairNodesArray[nodeIndex].isPinned = 1;
+                    }
+                }
+
                 hairNodesArray[nodeIndex].vx = 0.0f;
                 hairNodesArray[nodeIndex].vy = 0.0f;
                 hairNodesArray[nodeIndex].vz = 0.0f;
@@ -140,32 +168,39 @@ public class CPU3D: MonoBehaviour
                 float v = 1.0f - j * 1.0f / (nNodesPerHair);                
                 hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
 
-                // first row is intialized as pinned node
-                if (j == 0)
-                {
-                    hairNodesArray[nodeIndex].isPinned = 1;
-                }
-                else 
-                {
-                    hairNodesArray[nodeIndex].isPinned = 0;
-                }
+                // dummy node, do nothing here
+                hairNodesArray[nodeIndex].dummy2 = 0;
+                hairNodesArray[nodeIndex].dummy3 = 0;
             }                
         }
 
-        // collider data
+        // plane collider data
+        planeColliderPosY = -1 * resolution * nodeDistance / 2.0f;
+
+        // sphere collider data
         nColliders = 3;
         colliderRadius = 2.5f;
         colliderNodeArrays = new ColliderNode3D[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
-            colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2); ;
-            colliderNodeArrays[i].y = -20.0f;
-            colliderNodeArrays[i].z = 0.0f;
-            colliderNodeArrays[i].r = colliderRadius;
+            if (isFreefallMode)
+            {
+                colliderNodeArrays[i].x = colliderRadius * Mathf.Cos(i * Mathf.PI * 2.0f / nColliders );
+                colliderNodeArrays[i].y = planeColliderPosY;
+                colliderNodeArrays[i].z = colliderRadius * Mathf.Sin(i * Mathf.PI * 2.0f / nColliders );
+                colliderNodeArrays[i].r = colliderRadius * Random.Range(1.0f, 2.0f);
+            }
+            else {
+                colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2);
+                colliderNodeArrays[i].y = -20.0f;
+                colliderNodeArrays[i].z = 0.0f;
+                colliderNodeArrays[i].r = colliderRadius;
+            }
+            
             colliderNodeArrays[i].ax = 0;
             colliderNodeArrays[i].ay = 0;
             colliderNodeArrays[i].az = 0;
-        }        
+        }
     }
 
     void initGeo()
@@ -182,15 +217,21 @@ public class CPU3D: MonoBehaviour
             hairGeos[i] = newitem;
         }
 
-        //  instantiate collider
+        //  instantiate sphere colliders
         colliderGeos = new GameObject[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
             Vector3 location = new Vector3(colliderNodeArrays[i].x, colliderNodeArrays[i].y, colliderNodeArrays[i].z); 
-            var newitem = Instantiate(colliderPrefab, location, Quaternion.identity);
+            var newitem = Instantiate(sphereColliderPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
             colliderGeos[i] = newitem;
         }
+
+        // instantiate plane collider
+        Vector3 planeColliderLocation = new Vector3(0, planeColliderPosY, 0);
+        var planeCollider = Instantiate(planeColliderPrefab, planeColliderLocation, Quaternion.identity);
+        planeCollider.transform.localScale = new Vector3(1, 1, 1) * 4;
+        planeCollider.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
     }
 
     void initClothMesh()
@@ -260,6 +301,12 @@ public class CPU3D: MonoBehaviour
         hairNodesArray[index].isPinned = pinStatus;
     }
 
+    public void resetPinnedNodeDistance(int flag)
+    {
+        shader.SetInt("resetPinnedNodeDistanceFlag", flag);
+        resetPinnedNodeDistanceFlag = flag;
+    }
+
     void initShader() 
     {
         shader.SetInt("nNodesPerHair", nNodesPerHair);
@@ -274,6 +321,7 @@ public class CPU3D: MonoBehaviour
         shader.SetFloat("stiffness", stiffness); 
         shader.SetFloat("maxTravelDistance", maxTravelDistance);
         shader.SetFloat("bendingStiffness", bendingStiffness);
+        shader.SetFloat("planeColliderPosY", planeColliderPosY);
 
         shader.SetFloat("lightForce", lightForce);
         shader.SetFloat("lightAngle", lightAngle);
@@ -282,6 +330,7 @@ public class CPU3D: MonoBehaviour
 
         shader.SetInt("floatToInt", 2 << 17);
         shader.SetFloat("intToFloat", 1f / (2 << 17));
+        shader.SetInt("resetPinnedNodeDistance", 0);
 
         velocityKernel = shader.FindKernel("VelocityKernel");
         shader.SetBuffer(velocityKernel, "hairNodeBuffer", hairNodeBuffer);
@@ -319,6 +368,13 @@ public class CPU3D: MonoBehaviour
             shader.Dispatch(lightKernel, nThreadGrpsX, nThreadGrpsY, 1);    // light force
             shader.Dispatch(collisionKernel, nThreadGrpsX, nThreadGrpsY, 1);// update position, velocity and force upon collision
             shader.Dispatch(eulerKernel, nThreadGrpsX, nThreadGrpsY, 1);    // Euler's method to accumulate to new position.
+        }
+
+        if (resetPinnedNodeDistanceFlag == 1)
+        {
+            // always reset the flag to zero,
+            // because we don't want to update pinned node unless the user clicks the reset button.
+            resetPinnedNodeDistance(0); 
         }
 
         // set data to collider

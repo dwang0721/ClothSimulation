@@ -31,6 +31,7 @@ public class GlobalData : MonoBehaviour
     public SimulationMethod simulationMode = SimulationMethod.LocalGlobal; // default to GPU
     public RenderMode renderMode = RenderMode.Mesh;
     public float clothDebugNodeSize = 0.3f;
+    public bool isFreeFallMode = true;
 
     // profiling metrics setting
     public bool profileMode = false; // should start measuring the performance
