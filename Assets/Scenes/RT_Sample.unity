@@ -839,7 +839,7 @@ MonoBehaviour:
   simulationMode: 0
   renderMode: 1
   clothDebugNodeSize: 0.3
-  isFreeFallMode: 0
+  isFreeFallMode: 1
   profileMode: 0
   profileFrameMin: 10
   profileFrameMax: 60
