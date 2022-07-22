@@ -27,7 +27,7 @@ public class CPU3D: MonoBehaviour
     public Lamp theLamp;
     public Texture2D weightMap;
     public int resolution;
-    public bool isFreefallMode;
+    public SimulationScenario simulationScenario;
     public ClothMeshGenerator clothMesh;
     public float clothDebugNodeSize;
 
@@ -138,13 +138,8 @@ public class CPU3D: MonoBehaviour
 
                 hairNodesArray[nodeIndex].isPinned = 0;
 
-                if (isFreefallMode)
+               if (simulationScenario == SimulationScenario.Static)
                 {
-                    hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
-                    hairNodesArray[nodeIndex].y = 0.0f;
-                    hairNodesArray[nodeIndex].z = -nodeDistance * (j - nNodesPerHair / 2);
-                }
-                else {
                     hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
                     hairNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
                     hairNodesArray[nodeIndex].z = 0.0f;
@@ -154,6 +149,13 @@ public class CPU3D: MonoBehaviour
                     {
                         hairNodesArray[nodeIndex].isPinned = 1;
                     }
+                }
+
+                if (simulationScenario == SimulationScenario.FreeFall)
+                {
+                    hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
+                    hairNodesArray[nodeIndex].y = 0.0f;
+                    hairNodesArray[nodeIndex].z = -nodeDistance * (j - nNodesPerHair / 2);
                 }
 
                 hairNodesArray[nodeIndex].vx = 0.0f;
@@ -183,20 +185,22 @@ public class CPU3D: MonoBehaviour
         colliderNodeArrays = new ColliderNode3D[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
-            if (isFreefallMode)
+            if (simulationScenario == SimulationScenario.Static)
             {
-                colliderNodeArrays[i].x = colliderRadius * Mathf.Cos(i * Mathf.PI * 2.0f / nColliders );
-                colliderNodeArrays[i].y = planeColliderPosY;
-                colliderNodeArrays[i].z = colliderRadius * Mathf.Sin(i * Mathf.PI * 2.0f / nColliders );
-                colliderNodeArrays[i].r = colliderRadius * Random.Range(1.0f, 2.0f);
-            }
-            else {
                 colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2);
                 colliderNodeArrays[i].y = -20.0f;
                 colliderNodeArrays[i].z = 0.0f;
                 colliderNodeArrays[i].r = colliderRadius;
             }
-            
+
+            if (simulationScenario == SimulationScenario.FreeFall)
+            {
+                colliderNodeArrays[i].x = colliderRadius * Mathf.Cos(i * Mathf.PI * 2.0f / nColliders);
+                colliderNodeArrays[i].y = planeColliderPosY;
+                colliderNodeArrays[i].z = colliderRadius * Mathf.Sin(i * Mathf.PI * 2.0f / nColliders);
+                colliderNodeArrays[i].r = colliderRadius * Random.Range(1.0f, 2.0f);
+            }
+
             colliderNodeArrays[i].ax = 0;
             colliderNodeArrays[i].ay = 0;
             colliderNodeArrays[i].az = 0;

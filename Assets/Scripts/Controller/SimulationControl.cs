@@ -13,6 +13,7 @@ public class SimulationControl : MonoBehaviour
     public SimulationMethod simulationMode;
     Slider SliderStiffness, SliderGravity, SliderDistance, SliderMaxTravel, SliderBendingStiffness, SliderFriction;
     Slider LightIntensity, LightAngle;
+    Slider FlagTransX, FlagTransY, FlagTransZ, FlagRotX, FlagRotY, FlagRotZ;
 
     GlobalData globalData;
 
@@ -36,7 +37,7 @@ public class SimulationControl : MonoBehaviour
                 simulationController3D.gameObject.SetActive(true);
                 simulationOptMethodController.gameObject.SetActive(false);
                 simulationController3D.resolution = globalData.resolution;
-                simulationController3D.isFreefallMode = globalData.isFreeFallMode;
+                simulationController3D.simulationScenario = globalData.simulationScenario;
                 simulationController3D.clothDebugNodeSize = globalData.clothDebugNodeSize;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.ExplicitGPU;
@@ -59,39 +60,55 @@ public class SimulationControl : MonoBehaviour
     void Start()
     {
         // find slider controls
-        SliderDistance = gameObject.transform.Find("distance").GetComponent<Slider>();
-        SliderStiffness = gameObject.transform.Find("stiffness").GetComponent<Slider>();
-        SliderGravity = gameObject.transform.Find("gravity").GetComponent<Slider>();        
-        SliderMaxTravel = gameObject.transform.Find("maxTravel").GetComponent<Slider>();
-        SliderBendingStiffness = gameObject.transform.Find("bendStiff").GetComponent<Slider>();
-        SliderFriction = gameObject.transform.Find("friction").GetComponent<Slider>();
-        LightIntensity = gameObject.transform.Find("intensity").GetComponent<Slider>();
-        LightAngle = gameObject.transform.Find("angle").GetComponent<Slider>();
+        SliderDistance = gameObject.transform.Find("RunTimeConfigPanel").Find("distance").GetComponent<Slider>();
+        SliderStiffness = gameObject.transform.Find("RunTimeConfigPanel").Find("stiffness").GetComponent<Slider>();
+        SliderGravity = gameObject.transform.Find("RunTimeConfigPanel").Find("gravity").GetComponent<Slider>();        
+        SliderMaxTravel = gameObject.transform.Find("RunTimeConfigPanel").Find("maxTravel").GetComponent<Slider>();
+        SliderBendingStiffness = gameObject.transform.Find("RunTimeConfigPanel").Find("bendStiff").GetComponent<Slider>();
+        SliderFriction = gameObject.transform.Find("RunTimeConfigPanel").Find("friction").GetComponent<Slider>();
+
+        LightIntensity = gameObject.transform.Find("RunTimeConfigPanel").Find("intensity").GetComponent<Slider>();
+        LightAngle = gameObject.transform.Find("RunTimeConfigPanel").Find("angle").GetComponent<Slider>();
+
+        FlagTransX = gameObject.transform.Find("FlagControlPanel").Find("FlagTransX").GetComponent<Slider>();
+        FlagTransY = gameObject.transform.Find("FlagControlPanel").Find("FlagTransY").GetComponent<Slider>();
+        FlagTransZ = gameObject.transform.Find("FlagControlPanel").Find("FlagTransZ").GetComponent<Slider>();
+        FlagRotX = gameObject.transform.Find("FlagControlPanel").Find("FlagRotX").GetComponent<Slider>();
+        FlagRotY = gameObject.transform.Find("FlagControlPanel").Find("FlagRotY").GetComponent<Slider>();
+        FlagRotZ = gameObject.transform.Find("FlagControlPanel").Find("FlagRotZ").GetComponent<Slider>();
+
+        Debug.Assert(SliderDistance && SliderStiffness && SliderGravity && SliderMaxTravel && SliderBendingStiffness && SliderFriction);
+        Debug.Assert(LightIntensity && LightAngle);
+        Debug.Assert(FlagTransX && FlagTransY && FlagTransZ && FlagRotX && FlagRotY && FlagRotZ);
 
         // set up callbacks
-        if (simulationController3D.gameObject.active)
+        switch (simulationMode)
         {
-            SliderDistance.onValueChanged.AddListener(delegate { simulationController3D.updateNodeDistance(SliderDistance.value); });
-            SliderStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateStiffness(SliderStiffness.value); });
-            SliderGravity.onValueChanged.AddListener(delegate { simulationController3D.updateGravity(SliderGravity.value); });
-            SliderMaxTravel.onValueChanged.AddListener(delegate { simulationController3D.updateMaxTravel(SliderMaxTravel.value); });
-            SliderBendingStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateBendStiff(SliderBendingStiffness.value); });
-            SliderFriction.onValueChanged.AddListener(delegate { simulationController3D.updateFriction(SliderFriction.value); });
+            case SimulationMethod.ExplicitGPU:
+                SliderDistance.onValueChanged.AddListener(delegate { simulationController3D.updateNodeDistance(SliderDistance.value); });
+                SliderStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateStiffness(SliderStiffness.value); });
+                SliderGravity.onValueChanged.AddListener(delegate { simulationController3D.updateGravity(SliderGravity.value); });
+                SliderMaxTravel.onValueChanged.AddListener(delegate { simulationController3D.updateMaxTravel(SliderMaxTravel.value); });
+                SliderBendingStiffness.onValueChanged.AddListener(delegate { simulationController3D.updateBendStiff(SliderBendingStiffness.value); });
+                SliderFriction.onValueChanged.AddListener(delegate { simulationController3D.updateFriction(SliderFriction.value); });
 
-            LightIntensity.onValueChanged.AddListener(delegate { simulationController3D.updatelightForce(LightIntensity.value); });
-            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityImplict); });
-            LightAngle.onValueChanged.AddListener(delegate { simulationController3D.updatelightAngle(LightAngle.value); });
-            LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
-        }
-        else {
-            SliderDistance.onValueChanged.AddListener(delegate { simulationOptMethodController.updateNodeDistance(SliderDistance.value); });
-            SliderStiffness.onValueChanged.AddListener(delegate { simulationOptMethodController.updateStiffness(SliderStiffness.value); });
-            SliderGravity.onValueChanged.AddListener(delegate { simulationOptMethodController.updateGravity(SliderGravity.value); });
+                LightIntensity.onValueChanged.AddListener(delegate { simulationController3D.updatelightForce(LightIntensity.value); });
+                LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityImplict); });
+                LightAngle.onValueChanged.AddListener(delegate { simulationController3D.updatelightAngle(LightAngle.value); });
+                LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
+                break;
+            case SimulationMethod.LocalGlobal:
+                SliderDistance.onValueChanged.AddListener(delegate { simulationOptMethodController.updateNodeDistance(SliderDistance.value); });
+                SliderStiffness.onValueChanged.AddListener(delegate { simulationOptMethodController.updateStiffness(SliderStiffness.value); });
+                SliderGravity.onValueChanged.AddListener(delegate { simulationOptMethodController.updateGravity(SliderGravity.value); });
 
-            LightIntensity.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightForce(LightIntensity.value); });
-            LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityExplicit); });
-            LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
-            LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
+                LightIntensity.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightForce(LightIntensity.value); });
+                LightIntensity.onValueChanged.AddListener(delegate { theLamp.setLightColor(LightIntensity.value, lightMaxIntensityExplicit); });
+                LightAngle.onValueChanged.AddListener(delegate { simulationOptMethodController.updatelightAngle(LightAngle.value); });
+                LightAngle.onValueChanged.AddListener(delegate { theLamp.setViewingAngle(LightAngle.value); });
+                break;
+            default:
+                break;
         }
 
         initSliders();
@@ -100,28 +117,31 @@ public class SimulationControl : MonoBehaviour
     void initSliders()
     {
         // init slider values.
-        if (simulationController3D.gameObject.active)
+        switch (simulationMode)
         {
-            SliderDistance.GetComponent<UpdateValue>().updateSliderBar(CPU3D.nodeDistance, 0.2f, 6f);
-            SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.stiffness, 2.0f, 100f);
-            SliderGravity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.gravity, 0.05f, 5.0f);
-            SliderMaxTravel.GetComponent<UpdateValue>().updateSliderBar(CPU3D.maxTravelDistance, 0.5f, 20f);
-            SliderBendingStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.bendingStiffness, 0.01f, 0.5f);
-            SliderFriction.GetComponent<UpdateValue>().updateSliderBar(CPU3D.velocityDecay, 0.998f, 0.9999f);
+            case SimulationMethod.ExplicitGPU:
+                SliderDistance.GetComponent<UpdateValue>().updateSliderBar(CPU3D.nodeDistance, 0.2f, 6f);
+                SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.stiffness, 2.0f, 100f);
+                SliderGravity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.gravity, 0.05f, 5.0f);
+                SliderMaxTravel.GetComponent<UpdateValue>().updateSliderBar(CPU3D.maxTravelDistance, 0.5f, 20f);
+                SliderBendingStiffness.GetComponent<UpdateValue>().updateSliderBar(CPU3D.bendingStiffness, 0.01f, 0.5f);
+                SliderFriction.GetComponent<UpdateValue>().updateSliderBar(CPU3D.velocityDecay, 0.998f, 0.9999f);
 
-            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightForce, 0.0f, lightMaxIntensityImplict);
-            LightAngle.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightAngle, 1.0f, 45.0f);
-        }
-        else {
-            SliderDistance.GetComponent<UpdateValue>().updateSliderBar(OptMethod.nodeDistance, 0.2f, 10f);
-            SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(OptMethod.stiffness, 2.0f, 100f);
-            SliderGravity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.gravity, 0.05f, 10.0f);
-            SliderMaxTravel.gameObject.SetActive(false);
-            SliderBendingStiffness.gameObject.SetActive(false);
-            SliderFriction.gameObject.SetActive(false);
-
-            LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, lightMaxIntensityExplicit);
-            LightAngle.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightAngle, 1.0f, 45.0f);
+                LightIntensity.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightForce, 0.0f, lightMaxIntensityImplict);
+                LightAngle.GetComponent<UpdateValue>().updateSliderBar(CPU3D.lightAngle, 1.0f, 45.0f);
+                break;
+            case SimulationMethod.LocalGlobal:
+                SliderDistance.GetComponent<UpdateValue>().updateSliderBar(OptMethod.nodeDistance, 0.2f, 10f);
+                SliderStiffness.GetComponent<UpdateValue>().updateSliderBar(OptMethod.stiffness, 2.0f, 100f);
+                SliderGravity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.gravity, 0.05f, 10.0f);
+                SliderMaxTravel.gameObject.SetActive(false);
+                SliderBendingStiffness.gameObject.SetActive(false);
+                SliderFriction.gameObject.SetActive(false);
+                LightIntensity.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightForce, 0.0f, lightMaxIntensityExplicit);
+                LightAngle.GetComponent<UpdateValue>().updateSliderBar(OptMethod.lightAngle, 1.0f, 45.0f);
+                break;
+            default:
+                break;
         }
     }
 }

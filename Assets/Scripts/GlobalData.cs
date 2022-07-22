@@ -16,6 +16,13 @@ public enum RenderMode
     Mesh
 }
 
+public enum SimulationScenario
+{
+    Static,
+    FreeFall,
+    Flag
+}
+
 /*
  * This is the static simulation controller. The simulation properties should not be updated each frame.
  * Data needs to be preserved acrossed different simulation scene:
@@ -29,9 +36,10 @@ public class GlobalData : MonoBehaviour
     // Start is called before the first frame update
     public int resolution = 10;
     public SimulationMethod simulationMode = SimulationMethod.LocalGlobal; // default to GPU
+    public SimulationScenario simulationScenario = SimulationScenario.Static;
     public RenderMode renderMode = RenderMode.Mesh;
     public float clothDebugNodeSize = 0.3f;
-    public bool isFreeFallMode = true;
+    
 
     // profiling metrics setting
     public bool profileMode = false; // should start measuring the performance
