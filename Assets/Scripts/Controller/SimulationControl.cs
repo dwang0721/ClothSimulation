@@ -11,9 +11,9 @@ public class SimulationControl : MonoBehaviour
     public OptMethod simulationOptMethodController;
     public Lamp theLamp;
     public SimulationMethod simulationMode;
+    public SimulationScenario simulationScenario;
     Slider SliderStiffness, SliderGravity, SliderDistance, SliderMaxTravel, SliderBendingStiffness, SliderFriction;
     Slider LightIntensity, LightAngle;
-    Slider FlagTransX, FlagTransY, FlagTransZ, FlagRotX, FlagRotY, FlagRotZ;
 
     GlobalData globalData;
 
@@ -27,8 +27,9 @@ public class SimulationControl : MonoBehaviour
         globalData = GameObject.FindGameObjectsWithTag("GlobalData")[0].GetComponent<GlobalData>();
         Debug.Assert(globalData);
         simulationMode = globalData.simulationMode;
+        simulationScenario = globalData.simulationScenario;
 
-        Debug.Log("New Simlator: " + globalData.simulationMode + ";\t" + globalData.resolution );
+        Debug.Log(string.Format("Simualtion Configuration: Mode: {0}, Scenario: {1}, Resolution: {2}", simulationMode, simulationScenario, globalData.resolution));
 
         // set up the run time simulator
         switch (simulationMode)
@@ -70,16 +71,8 @@ public class SimulationControl : MonoBehaviour
         LightIntensity = gameObject.transform.Find("RunTimeConfigPanel").Find("intensity").GetComponent<Slider>();
         LightAngle = gameObject.transform.Find("RunTimeConfigPanel").Find("angle").GetComponent<Slider>();
 
-        FlagTransX = gameObject.transform.Find("FlagControlPanel").Find("FlagTransX").GetComponent<Slider>();
-        FlagTransY = gameObject.transform.Find("FlagControlPanel").Find("FlagTransY").GetComponent<Slider>();
-        FlagTransZ = gameObject.transform.Find("FlagControlPanel").Find("FlagTransZ").GetComponent<Slider>();
-        FlagRotX = gameObject.transform.Find("FlagControlPanel").Find("FlagRotX").GetComponent<Slider>();
-        FlagRotY = gameObject.transform.Find("FlagControlPanel").Find("FlagRotY").GetComponent<Slider>();
-        FlagRotZ = gameObject.transform.Find("FlagControlPanel").Find("FlagRotZ").GetComponent<Slider>();
-
         Debug.Assert(SliderDistance && SliderStiffness && SliderGravity && SliderMaxTravel && SliderBendingStiffness && SliderFriction);
         Debug.Assert(LightIntensity && LightAngle);
-        Debug.Assert(FlagTransX && FlagTransY && FlagTransZ && FlagRotX && FlagRotY && FlagRotZ);
 
         // set up callbacks
         switch (simulationMode)
@@ -113,6 +106,7 @@ public class SimulationControl : MonoBehaviour
 
         initSliders();
     }
+
 
     void initSliders()
     {

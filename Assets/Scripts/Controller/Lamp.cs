@@ -148,6 +148,7 @@ public class Lamp : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // TODO: this is no longer needed.
         if (simulationMode == SimulationMethod.ExplicitGPU) // currently GPU has collidor
         {
             if (!gotCollider) {

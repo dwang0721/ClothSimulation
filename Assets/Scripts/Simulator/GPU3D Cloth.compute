@@ -9,7 +9,7 @@ struct HairNode3D
     int ax, ay, az;
     float mass;
     float nx, ny, nz;
-    int isPinned, dummy2, dummy3;
+    int isPinned, isAttached, dummy3;
 };
 
 struct ColliderNode3D

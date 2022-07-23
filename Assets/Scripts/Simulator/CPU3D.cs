@@ -10,7 +10,7 @@ public struct HairNode3D
     public int ax, ay, az;
     public float mass; 
     public float nx, ny, nz;
-    public int isPinned, dummy2, dummy3;
+    public int isPinned, isAttached, dummy3;
 }
 
 public struct ColliderNode3D
@@ -25,6 +25,7 @@ public class CPU3D: MonoBehaviour
     public ComputeShader shader;    
     public GameObject hairPrefab, sphereColliderPrefab, planeColliderPrefab;
     public Lamp theLamp;
+    public FlagController theFlag;
     public Texture2D weightMap;
     public int resolution;
     public SimulationScenario simulationScenario;
@@ -78,6 +79,7 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(sphereColliderPrefab);
         Debug.Assert(planeColliderPrefab);
         Debug.Assert(theLamp);
+        Debug.Assert(theFlag);
         Debug.Assert(weightMap);
         Debug.Assert(resolution > 0);
         Debug.Assert(clothDebugNodeSize > 0);
@@ -88,6 +90,7 @@ public class CPU3D: MonoBehaviour
         initBuffer();
         initShader();
         initClothMesh();
+        initFlagController();
     }
 
     // Update is called once per frame
@@ -158,6 +161,20 @@ public class CPU3D: MonoBehaviour
                     hairNodesArray[nodeIndex].z = -nodeDistance * (j - nNodesPerHair / 2);
                 }
 
+                if (simulationScenario == SimulationScenario.Flag)
+                {
+                    hairNodesArray[nodeIndex].x = nodeDistance * (i - nHairs / 2);
+                    hairNodesArray[nodeIndex].y = -nodeDistance * (j - nNodesPerHair / 2);
+                    hairNodesArray[nodeIndex].z = 0.0f;
+
+                    // first row is intialized as pinned node
+                    if (j == 0)
+                    {
+                        hairNodesArray[nodeIndex].isPinned = 1;
+                        hairNodesArray[nodeIndex].isAttached = 1;
+                    }
+                }
+
                 hairNodesArray[nodeIndex].vx = 0.0f;
                 hairNodesArray[nodeIndex].vy = 0.0f;
                 hairNodesArray[nodeIndex].vz = 0.0f;
@@ -169,10 +186,6 @@ public class CPU3D: MonoBehaviour
                 float u = i * 1.0f / (nHairs);
                 float v = 1.0f - j * 1.0f / (nNodesPerHair);                
                 hairNodesArray[nodeIndex].mass = 1.0f + weightMap.GetPixelBilinear(u, v).grayscale;
-
-                // dummy node, do nothing here
-                hairNodesArray[nodeIndex].dummy2 = 0;
-                hairNodesArray[nodeIndex].dummy3 = 0;
             }                
         }
 
@@ -185,7 +198,7 @@ public class CPU3D: MonoBehaviour
         colliderNodeArrays = new ColliderNode3D[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
-            if (simulationScenario == SimulationScenario.Static)
+            if (simulationScenario == SimulationScenario.Static || simulationScenario == SimulationScenario.Flag)
             {
                 colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2);
                 colliderNodeArrays[i].y = -20.0f;
@@ -241,6 +254,20 @@ public class CPU3D: MonoBehaviour
     void initClothMesh()
     {
         clothMesh.initMeshExplict(hairNodesArray, nHairs, nNodesPerHair);
+    }
+
+    void initFlagController()
+    {
+        if (simulationScenario != SimulationScenario.Flag) {
+            theFlag.gameObject.SetActive(false);
+            return;
+        }
+
+        // get the first node position
+        float x = 0;
+        float y = hairNodesArray[0].y;
+        float z = hairNodesArray[0].z;
+        theFlag.setGlobalPose(new Vector3(x, y, z));
     }
 
     void initBuffer()
@@ -393,6 +420,25 @@ public class CPU3D: MonoBehaviour
         for (int i = 0; i < hairGeos.Length; i++)
         {
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
+
+            if (hairNodesArray[i].isAttached == 1 && simulationScenario == SimulationScenario.Flag) {
+                // update node position from flag
+                int rowIndex = i / nNodesPerHair;
+
+                // calculate the initial position of this node
+                float x = nodeDistance * (rowIndex - nHairs / 2);
+                float y = nodeDistance * nNodesPerHair / 2 ;
+
+                // get rotation for the flag
+                Quaternion q = theFlag.getPoleRotation();
+                Vector3 rotatedPos = q * new Vector3(x, 0, 0);
+
+                location = rotatedPos + theFlag.gameObject.transform.position;
+                hairNodesArray[i].x = location.x;
+                hairNodesArray[i].y = location.y;
+                hairNodesArray[i].z = location.z;
+            }
+
             hairGeos[i].transform.position = location;
         }
     }
