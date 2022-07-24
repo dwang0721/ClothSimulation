@@ -35,6 +35,7 @@ float planeColliderPosY;
 
 float lightForce;
 float lightAngle;
+float extFriction;
 float4 headPos;
 float4 headLookAtPos;
 
@@ -243,6 +244,7 @@ void CollisionKernel(uint3 id : SV_DispatchThreadID)
 
     int currIndex = id.x * nNodesPerHair + id.y;
     HairNode3D curr = hairNodeBuffer[currIndex];
+    float decayRatio = 1.0f - extFriction;
 
     for (int i = 0; i < nColliders; i++)
     {
@@ -275,24 +277,24 @@ void CollisionKernel(uint3 id : SV_DispatchThreadID)
                 colliderBuffer[i].az += 1000 * tangentVel.z;
             }
 
-            hairNodeBuffer[currIndex].vx *= 0.5f;
-            hairNodeBuffer[currIndex].vy *= 0.5f;
-            hairNodeBuffer[currIndex].vz *= 0.5f;
-            hairNodeBuffer[currIndex].ax *= 0.5f;
-            hairNodeBuffer[currIndex].ay *= 0.5f;
-            hairNodeBuffer[currIndex].az *= 0.5f;
+            hairNodeBuffer[currIndex].vx *= decayRatio;
+            hairNodeBuffer[currIndex].vy *= decayRatio;
+            hairNodeBuffer[currIndex].vz *= decayRatio;
+            hairNodeBuffer[currIndex].ax *= decayRatio;
+            hairNodeBuffer[currIndex].ay *= decayRatio;
+            hairNodeBuffer[currIndex].az *= decayRatio;
         }
     }
 
     if (hairNodeBuffer[currIndex].y < planeColliderPosY)
     {
         hairNodeBuffer[currIndex].y = planeColliderPosY;
-        hairNodeBuffer[currIndex].vx *= 0.5f;
-        hairNodeBuffer[currIndex].vy *= 0.5f;
-        hairNodeBuffer[currIndex].vz *= 0.5f;
-        hairNodeBuffer[currIndex].ax *= 0.5f;
-        hairNodeBuffer[currIndex].ay *= 0.5f;
-        hairNodeBuffer[currIndex].az *= 0.5f;
+        hairNodeBuffer[currIndex].vx *= decayRatio;
+        hairNodeBuffer[currIndex].vy *= decayRatio;
+        hairNodeBuffer[currIndex].vz *= decayRatio;
+        hairNodeBuffer[currIndex].ax *= decayRatio;
+        hairNodeBuffer[currIndex].ay *= decayRatio;
+        hairNodeBuffer[currIndex].az *= decayRatio;
     }
 }
 

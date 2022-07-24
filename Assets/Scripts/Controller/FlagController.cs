@@ -16,14 +16,18 @@ public class FlagController : MonoBehaviour
     Vector3 offset;
     Vector3 screenPoint;
 
-    // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         flagCube = gameObject.transform;
         flagPole = flagCube.Find("FlagPoleMesh");
-        Debug.Assert(explictSimulator);
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
         Debug.Assert(flagPole);
         Debug.Assert(flagCube);
+        Debug.Assert(explictSimulator);
     }
 
     // Update is called once per frame
@@ -112,5 +116,10 @@ public class FlagController : MonoBehaviour
     public Quaternion getPoleRotation()
     {
         return flagPole.transform.rotation;
+    }
+
+    public void setPoleLength(float length)
+    {
+        flagPole.transform.localScale = new Vector3(length, 0.4f, 0.4f);
     }
 }

@@ -66,6 +66,8 @@ public struct ClothSimulationImplicit
 
 public class OptMethod : MonoBehaviour
 {
+    public GlobalData globalData;
+
     // stuff can be seen from the UI
     public GameObject hairPrefab, colliderPrefab;
     public Lamp theLamp;
@@ -74,6 +76,7 @@ public class OptMethod : MonoBehaviour
     public int resolution = 10;
     public ClothMeshGenerator clothMesh;
     public float clothDebugNodeSize;
+    public FlagController theFlag;
 
     // Cloth vertex Data Structure.
     static GameObject[] clothVertArray;
@@ -104,17 +107,18 @@ public class OptMethod : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Debug.Assert(globalData);
         Debug.Assert(hairPrefab);
         Debug.Assert(colliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
-        Debug.Assert(resolution > 0);
-        Debug.Assert(clothDebugNodeSize > 0);
         Debug.Assert(clothMesh);
+        Debug.Assert(theFlag);
 
         initData();
         initClothVertices();
         initClothMesh();
+        initFlagController();
     }
 
     // Update is called once per frame
@@ -136,7 +140,7 @@ public class OptMethod : MonoBehaviour
                                             Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
                                             Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
             GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
-            newitem.transform.localScale = new Vector3(1, 1, 1);
+            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
             clothVertArray[i] = newitem;
         }
 
@@ -161,22 +165,30 @@ public class OptMethod : MonoBehaviour
         clothMesh.updateMeshImplict(ClothSimImp.curr_p);
     }
 
+    void initFlagController()
+    {
+        theFlag.gameObject.SetActive(false);
+    }
+
     void initData()
     {
+        clothDebugNodeSize = globalData.clothDebugNodeSize;
+
         // hair nodes
-        nHairs = resolution;
-        nNodesPerHair = resolution;
+        nHairs = globalData.resolution;
+        nNodesPerHair = globalData.resolution;
         nEdges = (nHairs - 1) * nNodesPerHair + (nNodesPerHair - 1) * nHairs;
 
         // global simulation variables
-        nodeDistance = 3;
-        gravity = 0.5f;
+        nodeDistance = globalData.nodeDistance;
+        gravity = globalData.gravity;
+        stiffness = globalData.stiffness;
         steph = 1.0f;
-        stiffness = 5.0f;
 
         // light control
-        lightForce = 0.1f;
-        lightAngle = 10.0f;
+        lightForce = globalData.lightForce;
+        lightAngle = globalData.lightAngle;
+
         headPos = theLamp.head.transform.position;
         headLookAtPos = theLamp.headLookAt;
 

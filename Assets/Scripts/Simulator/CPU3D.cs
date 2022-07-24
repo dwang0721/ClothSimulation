@@ -49,18 +49,19 @@ public class CPU3D: MonoBehaviour
     static public float planeColliderPosY = 0;
 
     // simulation parameters
-    public static float nodeDistance;
+    public float nodeDistance;
     static float dPosition;             // speed ratio for euler's method
     static float dVelocity;             // force ratio for euler's method
-    public static float forceDecay;
-    public static float velocityDecay;
-    public static float gravity;
-    public static float stiffness;             // used for Hooke's law spring coefficient.
-    public static float maxTravelDistance;     // the maximum distance node apart.
-    public static float bendingStiffness;      // coefficient for bending forces
+    public float forceDecay;
+    public float velocityDecay;
+    public float gravity;
+    public float stiffness;             // used for Hooke's law spring coefficient.
+    public float maxTravelDistance;     // the maximum distance node apart.
+    public float bendingStiffness;      // coefficient for bending forces
 
     public static float lightForce;
     public static float lightAngle;
+    public static float extFriction;
     public static Vector3 headPos;
     public static Vector3 headLookAtPos;
 
@@ -81,9 +82,8 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(theLamp);
         Debug.Assert(theFlag);
         Debug.Assert(weightMap);
-        Debug.Assert(resolution > 0);
-        Debug.Assert(clothDebugNodeSize > 0);
         Debug.Assert(clothMesh);
+        Debug.Assert(resolution > 0);
 
         initData();
         initGeo();
@@ -112,20 +112,10 @@ public class CPU3D: MonoBehaviour
         nNodesPerHair = resolution;
         hairNodesArray = new HairNode3D[ nHairs * nNodesPerHair ];
 
-        // simulation variables
-        nodeDistance = 0.49f;    // Initial Node distance apart.
         dPosition = 0.0004f;    // Euler method integration ratio for speed.
         dVelocity = 1.0f;       // Euler method integration ratio for acceleration.
         forceDecay = 0.0000f;
-        velocityDecay = 0.999f; 
-        gravity = 0.1f;
-        stiffness = 6.0f;
-        maxTravelDistance = 5.0f;
-        bendingStiffness = 0.1f;
 
-        // light force variables
-        lightForce = 0.1f;
-        lightAngle = 10.0f;
         headPos = theLamp.head.transform.position;
         headLookAtPos = theLamp.headLookAt;
 
@@ -198,7 +188,7 @@ public class CPU3D: MonoBehaviour
         colliderNodeArrays = new ColliderNode3D[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
-            if (simulationScenario == SimulationScenario.Static || simulationScenario == SimulationScenario.Flag)
+            if (simulationScenario == SimulationScenario.Static)
             {
                 colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2);
                 colliderNodeArrays[i].y = -20.0f;
@@ -206,7 +196,7 @@ public class CPU3D: MonoBehaviour
                 colliderNodeArrays[i].r = colliderRadius;
             }
 
-            if (simulationScenario == SimulationScenario.FreeFall)
+            if (simulationScenario == SimulationScenario.FreeFall || simulationScenario == SimulationScenario.Flag)
             {
                 colliderNodeArrays[i].x = colliderRadius * Mathf.Cos(i * Mathf.PI * 2.0f / nColliders);
                 colliderNodeArrays[i].y = planeColliderPosY;
@@ -268,6 +258,7 @@ public class CPU3D: MonoBehaviour
         float y = hairNodesArray[0].y;
         float z = hairNodesArray[0].z;
         theFlag.setGlobalPose(new Vector3(x, y, z));
+        theFlag.setPoleLength(resolution*nodeDistance);
     }
 
     void initBuffer()
@@ -284,31 +275,38 @@ public class CPU3D: MonoBehaviour
 
     public void updateNodeDistance(float dis) {
         shader.SetFloat("nodeDistance", dis);
+        nodeDistance = dis;
+        theFlag.setPoleLength(resolution * nodeDistance);
     }
 
     public void updateStiffness(float stiff)
     {
         shader.SetFloat("stiffness", stiff);
+        stiffness = stiff;
     }
 
     public void updateGravity(float grav)
     {
         shader.SetFloat("gravity", grav);
+        gravity = grav;
     }
 
     public void updateMaxTravel(float maxTrav)
     {
         shader.SetFloat("maxTravelDistance", maxTrav);
+        maxTravelDistance = maxTrav;
     }
 
     public void updateBendStiff(float bendStiff)
     {
         shader.SetFloat("bendingStiffness", bendStiff);
+        bendingStiffness = bendStiff;
     }
 
     public void updateFriction(float friction)
     {
         shader.SetFloat("velocityDecay", friction);
+        velocityDecay = friction;
     }
 
     public void updateLightDirection(Vector3 headPos, Vector3 headLookAtPos)
@@ -317,14 +315,23 @@ public class CPU3D: MonoBehaviour
         shader.SetVector("headLookAtPos", headLookAtPos);
     }
 
-    public void updatelightForce(float lightForce)
+    public void updatelightForce(float lForce)
     {
-        shader.SetFloat("lightForce", lightForce);
+        shader.SetFloat("lightForce", lForce);
+        lightForce = lForce;
     }
 
-    public void updatelightAngle(float lightAngle)
+    public void updatelightAngle(float lAngle)
     {
-        shader.SetFloat("lightAngle", lightAngle);
+        shader.SetFloat("lightAngle", lAngle);
+        lightAngle = lAngle;
+    }
+
+
+    public void setExtFriction(float friction)
+    {
+        shader.SetFloat("extFriction", Mathf.Clamp(friction, 0.0f, 1.0f));
+        extFriction = friction;
     }
 
     public void setHairNodesPinStatusAtIndex(int index, int pinStatus)
@@ -421,8 +428,8 @@ public class CPU3D: MonoBehaviour
         {
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
 
+            // if the node is attached to Flag, update the node position.
             if (hairNodesArray[i].isAttached == 1 && simulationScenario == SimulationScenario.Flag) {
-                // update node position from flag
                 int rowIndex = i / nNodesPerHair;
 
                 // calculate the initial position of this node

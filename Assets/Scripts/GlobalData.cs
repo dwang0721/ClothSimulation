@@ -39,7 +39,19 @@ public class GlobalData : MonoBehaviour
     public SimulationScenario simulationScenario = SimulationScenario.Static;
     public RenderMode renderMode = RenderMode.Mesh;
     public float clothDebugNodeSize = 0.3f;
-    
+
+    // Simulation internal variables
+    public float nodeDistance = 0.49f;    // Initial Node distance apart.
+    public float stiffness = 6.0f;
+    public float gravity = 0.1f;
+    public float maxTravelDistance = 5.0f;
+    public float bendingStiffness = 0.1f;
+    public float velocityDecay = 0.999f;
+
+    // Simulation external variables
+    public float lightForce = 0.1f;
+    public float lightAngle = 10.0f;
+    public float extFriction = 0.4f;
 
     // profiling metrics setting
     public bool profileMode = false; // should start measuring the performance
