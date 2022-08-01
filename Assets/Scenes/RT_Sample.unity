@@ -1186,6 +1186,7 @@ Transform:
   - {fileID: 851427419}
   - {fileID: 766827852}
   - {fileID: 1794294800}
+  - {fileID: 930811363}
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2241,6 +2242,57 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &930811362
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 930811363}
+  - component: {fileID: 930811364}
+  m_Layer: 0
+  m_Name: SurfaceTest
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &930811363
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 930811362}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.64134926, y: 3.9615078, z: -2.0659623}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 461810572}
+  m_RootOrder: 8
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &930811364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 930811362}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb724aeb38b0d7e4d9af02bd0c4dae0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  keyPoints: []
+  distanceToCloth: -30
+  keyPointColor: {r: 1, g: 0, b: 0.8991847, a: 0}
+  interpolateColor: {r: 0, g: 1, b: 0.030314207, a: 0}
+  keyPointPrefab: {fileID: 7765864190364122376, guid: d362badae455b314788644afb5beef3b,
+    type: 3}
+  tx: 0
+  ty: 0
 --- !u!1 &951569408
 GameObject:
   m_ObjectHideFlags: 0
@@ -4284,7 +4336,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1794294800
 Transform:
   m_ObjectHideFlags: 0
@@ -4308,22 +4360,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1794294799}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db7072d37ec2ff8439b1c2a4612cd52c, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b31db07b09de9a4f8a2160aa2d2d063, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  keyPoints:
-  - {x: -8, y: -5, z: -30}
-  - {x: -3, y: 3, z: -30}
-  - {x: 6, y: -3, z: -30}
-  - {x: 10, y: 3, z: -30}
-  - {x: 12, y: -1, z: -30}
-  - {x: 16, y: 8, z: -30}
-  - {x: 20, y: 0, z: -30}
-  keyPointColor: {r: 0.9716981, g: 0, b: 0.8412118, a: 0}
-  interpolateColor: {r: 0, g: 1, b: 0.0022239685, a: 0.53333336}
+  keyPoints: []
+  keyPointColor: {r: 1, g: 0, b: 0.90488815, a: 0}
+  interpolateColor: {r: 0.033675432, g: 1, b: 0, a: 0}
   keyPointPrefab: {fileID: 7765864190364122376, guid: d362badae455b314788644afb5beef3b,
     type: 3}
   t: 0
+  randomGeneration: 0
+  nodeDistance: 3
 --- !u!1 &1898497602
 GameObject:
   m_ObjectHideFlags: 0

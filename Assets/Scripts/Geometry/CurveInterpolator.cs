@@ -4,7 +4,7 @@ using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 
-public class CurveGenerator : MonoBehaviour
+public class CurveInterpolator : MonoBehaviour
 {
     public Vector3[] keyPoints;
     public Color keyPointColor, interpolateColor;
@@ -14,6 +14,9 @@ public class CurveGenerator : MonoBehaviour
 
     [Range(0, 0.999f)]
     public float t;
+
+    public bool randomGeneration = false;
+    public float nodeDistance = 3.0f;
 
     // catmull-Rom Matrix
     static Matrix<double> catmullRomMatrix = 0.5 * Matrix<double>.Build.DenseOfArray(
@@ -28,8 +31,11 @@ public class CurveGenerator : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Assert(keyPoints.Length >= 4);
         Debug.Assert(keyPointPrefab);
+
+        populateKeyPoints(10);
+        Debug.Assert(keyPoints.Length >= 4);
+        
         initKeyPointGeos();
     }
 
@@ -38,6 +44,22 @@ public class CurveGenerator : MonoBehaviour
     {
         updateKeyPointGeo();
         catmullRomInterpolation(t);
+    }
+
+    void populateKeyPoints(int numKeyPoints)
+    {
+        
+        if (keyPoints.Length < 4 || randomGeneration) {
+            keyPoints = new Vector3[numKeyPoints];
+
+            for (int i = 0; i < numKeyPoints; i++) {
+                float x = Random.Range(-0.1f, 0.1f) + nodeDistance * (i - numKeyPoints / 2.0f);
+                float y = Random.Range(-5.0f, 5.0f);
+                float z = -30.0f + Random.Range(-2.0f, 2.0f);
+                keyPoints[i] = new Vector3(x, y, z);
+            }
+
+        }
     }
 
     void initKeyPointGeos()

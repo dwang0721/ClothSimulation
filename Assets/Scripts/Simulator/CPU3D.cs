@@ -36,7 +36,7 @@ public class CPU3D: MonoBehaviour
 
     // hair nodes,  hair is a vertical line of the cloth
     public static int nHairs, nNodesPerHair;
-    static HairNode3D[] hairNodesArray;    
+    public static HairNode3D[] hairNodesArray;    
     static GameObject[] hairGeos;
 
     // sphere colliders
