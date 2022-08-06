@@ -47,6 +47,7 @@ public class GlobalData : MonoBehaviour
     public float maxTravelDistance = 5.0f;
     public float bendingStiffness = 0.1f;
     public float velocityDecay = 0.999f;
+    public float collisionPushAwayDistance = 0.2f;
 
     // Simulation external variables
     public float lightForce = 0.1f;

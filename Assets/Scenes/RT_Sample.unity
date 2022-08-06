@@ -231,15 +231,26 @@ MonoBehaviour:
   globalData: {fileID: 287258715}
   hairPrefab: {fileID: 7765864190364122376, guid: 75b2e3a4bfdf72f4d9718223c8f5ea2a,
     type: 3}
-  colliderPrefab: {fileID: 7765864190364122376, guid: 60ca314bd66c5ec4c86f055416d9129b,
+  sphereColliderPrefab: {fileID: 7765864190364122376, guid: 60ca314bd66c5ec4c86f055416d9129b,
+    type: 3}
+  planeColliderPrefab: {fileID: 7955328939988848619, guid: 926f347857a151e43a48e9519b1cc229,
     type: 3}
   theLamp: {fileID: 5476361862550543582}
   weightMap: {fileID: 2800000, guid: 4618124f4785e6d4783fa8f19d58e331, type: 3}
   LightIntensityMutiplier: 10
   resolution: 0
+  simulationScenario: 0
   clothMesh: {fileID: 851427422}
   clothDebugNodeSize: 0
   theFlag: {fileID: 1733634324}
+  nodeDistance: 0
+  gravity: 0
+  stiffness: 0
+  collisionPushAwayDistance: 0
+  lightForce: 0
+  lightAngle: 0
+  headPos: {x: 0, y: 0, z: 0}
+  headLookAtPos: {x: 0, y: 0, z: 0}
 --- !u!4 &4333656
 Transform:
   m_ObjectHideFlags: 0
@@ -837,7 +848,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 693c5420b9098954795b8f66b856086d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resolution: 17
+  resolution: 16
   simulationMode: 0
   simulationScenario: 2
   renderMode: 0
@@ -848,6 +859,7 @@ MonoBehaviour:
   maxTravelDistance: 5
   bendingStiffness: 0.1
   velocityDecay: 0.999
+  collisionPushAwayDistance: 0.2
   lightForce: 0.1
   lightAngle: 10
   extFriction: 0.4
@@ -1186,7 +1198,6 @@ Transform:
   - {fileID: 851427419}
   - {fileID: 766827852}
   - {fileID: 1794294800}
-  - {fileID: 930811363}
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2242,57 +2253,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &930811362
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 930811363}
-  - component: {fileID: 930811364}
-  m_Layer: 0
-  m_Name: SurfaceTest
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &930811363
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 930811362}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.64134926, y: 3.9615078, z: -2.0659623}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 461810572}
-  m_RootOrder: 8
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &930811364
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 930811362}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb724aeb38b0d7e4d9af02bd0c4dae0f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  keyPoints: []
-  distanceToCloth: -30
-  keyPointColor: {r: 1, g: 0, b: 0.8991847, a: 0}
-  interpolateColor: {r: 0, g: 1, b: 0.030314207, a: 0}
-  keyPointPrefab: {fileID: 7765864190364122376, guid: d362badae455b314788644afb5beef3b,
-    type: 3}
-  tx: 0
-  ty: 0
 --- !u!1 &951569408
 GameObject:
   m_ObjectHideFlags: 0
@@ -5411,6 +5371,7 @@ MonoBehaviour:
   simulationScenario: 0
   clothMesh: {fileID: 851427422}
   clothDebugNodeSize: 0
+  collisionPushAwayDistance: 0
   nodeDistance: 0
   forceDecay: 0
   velocityDecay: 0
@@ -5418,6 +5379,11 @@ MonoBehaviour:
   stiffness: 0
   maxTravelDistance: 0
   bendingStiffness: 0
+  lightForce: 0
+  lightAngle: 0
+  extFriction: 0
+  headPos: {x: 0, y: 0, z: 0}
+  headLookAtPos: {x: 0, y: 0, z: 0}
 --- !u!1 &3580923392891208059
 GameObject:
   m_ObjectHideFlags: 0

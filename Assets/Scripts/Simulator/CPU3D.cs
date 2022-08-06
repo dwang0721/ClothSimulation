@@ -40,6 +40,7 @@ public class CPU3D: MonoBehaviour
     static GameObject[] hairGeos;
 
     // sphere colliders
+    public float collisionPushAwayDistance;
     static public int nColliders;
     static public float colliderRadius;
     static ColliderNode3D[] colliderNodeArrays;
@@ -59,11 +60,11 @@ public class CPU3D: MonoBehaviour
     public float maxTravelDistance;     // the maximum distance node apart.
     public float bendingStiffness;      // coefficient for bending forces
 
-    public static float lightForce;
-    public static float lightAngle;
-    public static float extFriction;
-    public static Vector3 headPos;
-    public static Vector3 headLookAtPos;
+    public float lightForce;
+    public float lightAngle;
+    public float extFriction;
+    public Vector3 headPos;
+    public Vector3 headLookAtPos;
 
     public static int resetPinnedNodeDistanceFlag;
 
@@ -84,6 +85,7 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(weightMap);
         Debug.Assert(clothMesh);
         Debug.Assert(resolution > 0);
+        Debug.Assert(nodeDistance > 0);
 
         initData();
         initGeo();
@@ -360,6 +362,7 @@ public class CPU3D: MonoBehaviour
         shader.SetFloat("maxTravelDistance", maxTravelDistance);
         shader.SetFloat("bendingStiffness", bendingStiffness);
         shader.SetFloat("planeColliderPosY", planeColliderPosY);
+        shader.SetFloat("collisionPushAwayDistance", collisionPushAwayDistance);
 
         shader.SetFloat("lightForce", lightForce);
         shader.SetFloat("lightAngle", lightAngle);

@@ -32,6 +32,7 @@ float stiffness;
 float maxTravelDistance;
 float bendingStiffness;
 float planeColliderPosY;
+float collisionPushAwayDistance;
 
 float lightForce;
 float lightAngle;
@@ -249,11 +250,12 @@ void CollisionKernel(uint3 id : SV_DispatchThreadID)
     for (int i = 0; i < nColliders; i++)
     {
         float3 nodeToColliderCenter = float3(curr.x - colliderBuffer[i].x, curr.y - colliderBuffer[i].y, curr.z - colliderBuffer[i].z);
+        float totalPushAwayDistance = collisionPushAwayDistance + colliderBuffer[i].r;
         
-        if (length(nodeToColliderCenter) < colliderBuffer[i].r)
+        if (length(nodeToColliderCenter) < totalPushAwayDistance)
         {
             // move node outside the circle
-            float3 newPos = float3(colliderBuffer[i].x, colliderBuffer[i].y, colliderBuffer[i].z) + normalize(nodeToColliderCenter) * colliderBuffer[i].r;
+            float3 newPos = float3(colliderBuffer[i].x, colliderBuffer[i].y, colliderBuffer[i].z) + normalize(nodeToColliderCenter) * totalPushAwayDistance;
             hairNodeBuffer[currIndex].x = newPos.x;
             hairNodeBuffer[currIndex].y = newPos.y;
             hairNodeBuffer[currIndex].z = newPos.z;

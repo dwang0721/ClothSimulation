@@ -41,7 +41,8 @@ public class SimulationControl : MonoBehaviour
                 simulationController3D.resolution = globalData.resolution;
                 simulationController3D.simulationScenario = globalData.simulationScenario;
                 simulationController3D.clothDebugNodeSize = globalData.clothDebugNodeSize;
-                simulationController3D.nodeDistance = globalData.nodeDistance;    // Initial Node distance apart.
+                simulationController3D.nodeDistance = globalData.nodeDistance;
+                simulationController3D.collisionPushAwayDistance = globalData.collisionPushAwayDistance;
                 simulationController3D.gravity = globalData.gravity;
                 simulationController3D.stiffness = globalData.stiffness;
                 simulationController3D.maxTravelDistance = globalData.maxTravelDistance;
@@ -54,8 +55,12 @@ public class SimulationControl : MonoBehaviour
             case SimulationMethod.LocalGlobal:
                 simulationController3D.gameObject.SetActive(false);
                 simulationOptMethodController.gameObject.SetActive(true);
+
                 simulationOptMethodController.resolution = globalData.resolution;
+                simulationOptMethodController.simulationScenario = globalData.simulationScenario;
                 simulationOptMethodController.clothDebugNodeSize = globalData.clothDebugNodeSize;
+                simulationOptMethodController.nodeDistance = globalData.nodeDistance * 2;
+                simulationOptMethodController.collisionPushAwayDistance = globalData.collisionPushAwayDistance;
                 theLamp.gameObject.SetActive(true);
                 theLamp.simulationMode = SimulationMethod.LocalGlobal;
                 break;

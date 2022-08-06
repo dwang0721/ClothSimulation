@@ -69,14 +69,19 @@ public class OptMethod : MonoBehaviour
     public GlobalData globalData;
 
     // stuff can be seen from the UI
-    public GameObject hairPrefab, colliderPrefab;
+    public GameObject hairPrefab, sphereColliderPrefab, planeColliderPrefab;
     public Lamp theLamp;
     public Texture2D weightMap;
     public int LightIntensityMutiplier = 10;
     public int resolution = 10;
+    public SimulationScenario simulationScenario;
     public ClothMeshGenerator clothMesh;
     public float clothDebugNodeSize;
     public FlagController theFlag;
+
+    public float nodeDistance;
+    public float gravity;
+    public float stiffness;
 
     // Cloth vertex Data Structure.
     static GameObject[] clothVertArray;
@@ -88,32 +93,34 @@ public class OptMethod : MonoBehaviour
     static public int nHairs, nNodesPerHair, nEdges;
     static public float steph;
 
-    // colliders
+    // sphere colliders
+    public float collisionPushAwayDistance;
     static public int nColliders;
     static public float colliderRadius;
     static ColliderNodes[] colliderNodeArrays;
     static public GameObject[] colliderGeos;
 
-    public static float nodeDistance;            
-    public static float gravity;
-    public static float stiffness;             // used for Hooke's law spring coefficient.
-    public static float bendingStiffness;      // coefficient for bending forces
+    // plane collider
+    static public float planeColliderPosY = 0;
 
-    public static float lightForce;
-    public static float lightAngle;
-    public static Vector3 headPos;
-    public static Vector3 headLookAtPos;
+    public float lightForce;
+    public float lightAngle;
+    public Vector3 headPos;
+    public Vector3 headLookAtPos;
 
     // Start is called before the first frame update
     void Start()
     {
         Debug.Assert(globalData);
         Debug.Assert(hairPrefab);
-        Debug.Assert(colliderPrefab);
+        Debug.Assert(sphereColliderPrefab);
+        Debug.Assert(planeColliderPrefab);
         Debug.Assert(theLamp);
         Debug.Assert(weightMap);
         Debug.Assert(clothMesh);
         Debug.Assert(theFlag);
+        Debug.Assert(resolution > 0);
+        Debug.Assert(nodeDistance > 0);
 
         initData();
         initClothVertices();
@@ -136,23 +143,27 @@ public class OptMethod : MonoBehaviour
         clothVertArray = new GameObject[nHairs * nNodesPerHair];
         for (int i = 0; i < nHairs * nNodesPerHair; i++)
         {
-            Vector3 location = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
-                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
-                                            Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+            Vector3 location = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
             GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
             clothVertArray[i] = newitem;
         }
 
-        //  instantiate collider
+        //  instantiate sphere colliders
         colliderGeos = new GameObject[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
             Vector3 location = new Vector3(colliderNodeArrays[i].x, colliderNodeArrays[i].y, colliderNodeArrays[i].z);
-            var newitem = Instantiate(colliderPrefab, location, Quaternion.identity);
+            var newitem = Instantiate(sphereColliderPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
             colliderGeos[i] = newitem;
         }
+
+        // instantiate plane collider
+        Vector3 planeColliderLocation = new Vector3(0, planeColliderPosY, 0);
+        var planeCollider = Instantiate(planeColliderPrefab, planeColliderLocation, Quaternion.identity);
+        planeCollider.transform.localScale = new Vector3(1, 1, 1) * 4;
+        planeCollider.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
     }
 
     void initClothMesh()
@@ -205,10 +216,27 @@ public class OptMethod : MonoBehaviour
             {                
                 // implementation here
                 nodeIndex = i * nNodesPerHair + j;
+                if (simulationScenario == SimulationScenario.Static)
+                {
+                    initial_pos[3 * nodeIndex] = nodeDistance * (i - nHairs / 2);
+                    initial_pos[3 * nodeIndex + 1] = -nodeDistance * (j - nNodesPerHair / 2);
+                    initial_pos[3 * nodeIndex + 2] = 0.0f;
+                }
 
-                initial_pos[3 * nodeIndex] =  nodeDistance * (i - nHairs / 2);
-                initial_pos[3 * nodeIndex + 1] = -nodeDistance * (j - nNodesPerHair / 2);
-                initial_pos[3 * nodeIndex + 2] = 0.0f;
+                if (simulationScenario == SimulationScenario.FreeFall)
+                {
+                    initial_pos[3 * nodeIndex] = nodeDistance * (i - nHairs / 2);
+                    initial_pos[3 * nodeIndex + 1] = 0.0f;
+                    initial_pos[3 * nodeIndex + 2] = -nodeDistance * (j - nNodesPerHair / 2);
+                }
+
+                if (simulationScenario == SimulationScenario.Flag)
+                {
+                    initial_pos[3 * nodeIndex] = nodeDistance * (i - nHairs / 2);
+                    initial_pos[3 * nodeIndex + 1] = -nodeDistance * (j - nNodesPerHair / 2);
+                    initial_pos[3 * nodeIndex + 2] = 0.0f;
+                }
+
             }
         }
 
@@ -282,9 +310,9 @@ public class OptMethod : MonoBehaviour
         // calculate CTC matrix, CTC is used to set the pinned vertex;
         LocalGlobal_compute_MatrixCTC(10000000);
 
-        // collider data
-        nColliders = 1;
-        colliderRadius = 8.0f;
+        // sphere collider data
+        nColliders = 3;
+        colliderRadius = 4.0f;
         colliderNodeArrays = new ColliderNodes[nColliders];
         for (int i = 0; i < nColliders; i++)
         {
@@ -293,6 +321,9 @@ public class OptMethod : MonoBehaviour
             colliderNodeArrays[i].z = 0.0f;
             colliderNodeArrays[i].r = colliderRadius;
         }
+
+        // plane collider data
+        planeColliderPosY = -1 * resolution * nodeDistance / 2.0f;
     }
 
     //////////////////////////// Cloth Simulation Loop ////////////////////////////
@@ -401,37 +432,42 @@ public class OptMethod : MonoBehaviour
 
                 // implementation
                 int nodeIndex = i * nNodesPerHair + j;
-                clothVertArray[nodeIndex].transform.position = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex, 0)),
-                                                                           Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 1, 0)),
-                                                                           Convert.ToSingle(ClothSimImp.curr_p.At(3 * nodeIndex + 2, 0)));
+                clothVertArray[nodeIndex].transform.position = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
             }
         }
     }
 
     void LocalGlobal_update_position_from_collision()
     {
-        double[] new_pos = new double[nHairs * nNodesPerHair * 3];
-
+        // double[] new_pos = new double[nHairs * nNodesPerHair * 3];      
         for (int j = 0; j < nColliders; j++)
         {
             for (int i = 0; i < nHairs * nNodesPerHair; i++)
             {
-                Vector3 curr_node_pos = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
-                                                    Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
-                                                    Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+                Vector3 curr_node_pos = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
                 Vector3 node_to_collider = curr_node_pos - colliderGeos[j].transform.position;
+                colliderRadius = colliderGeos[j].transform.localScale.x / 2.0f;
+                float totalPushAwayDistance = colliderRadius + collisionPushAwayDistance;
 
-                if (node_to_collider.magnitude < colliderRadius) {
-                    Vector3 p = colliderGeos[j].transform.position + node_to_collider.normalized * colliderRadius;
-                    Matrix<double> new_sub_p_matrix = Matrix<double>.Build.Dense(3, 1, new double[] {p.x, p.y, p.z});
+                // sphere collider
+                if (node_to_collider.magnitude < totalPushAwayDistance) {
+                    Vector3 p = colliderGeos[j].transform.position + node_to_collider.normalized * totalPushAwayDistance;
+                    setColumnMatrixFromVector3(ClothSimImp.curr_p, i, p);
+                    setColumnMatrixFromVector3(ClothSimImp.prev_p, i, p);
+                    setColumnMatrixFromVector3(ClothSimImp.rest_p, i, p);
+                }
 
-                    ClothSimImp.curr_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
-                    ClothSimImp.prev_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
-                    ClothSimImp.rest_p.SetSubMatrix(3 * i, 3, 0, 1, new_sub_p_matrix);
+                // plane collider
+                if (curr_node_pos.y < planeColliderPosY)
+                {
+                    Vector3 p = new Vector3(curr_node_pos.x, planeColliderPosY, curr_node_pos.z);
+                    setColumnMatrixFromVector3(ClothSimImp.curr_p, i, p);
+                    setColumnMatrixFromVector3(ClothSimImp.prev_p, i, p);
+                    setColumnMatrixFromVector3(ClothSimImp.rest_p, i, p);
                 }
             }
         }
-            return;
+    return;
     }
 
     void LocalGlobal_update_inertiaY()
@@ -448,9 +484,7 @@ public class OptMethod : MonoBehaviour
         Vector3 head_look_at_dir = (headLookAtPos - headPos).normalized;
 
         for (int i = 0; i < nHairs * nNodesPerHair; i++) {
-            Vector3 curr_node_pos = new Vector3(Convert.ToSingle(ClothSimImp.curr_p.At(3 * i, 0)),
-                                                Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 1, 0)),
-                                                Convert.ToSingle(ClothSimImp.curr_p.At(3 * i + 2, 0)));
+            Vector3 curr_node_pos = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
             Vector3 head_to_node_dir = (curr_node_pos - headPos).normalized;
             float dot_value = Vector3.Dot(head_look_at_dir, head_to_node_dir);
 
@@ -551,6 +585,27 @@ public class OptMethod : MonoBehaviour
     public void updatelightAngle(float a)
     {
         lightAngle = a;
+    }
+
+    Vector3 getVector3FromColumnMatrix(Matrix<double> columnMatrix, int index)
+    {
+        //columnMatrix must be a 3m x 1 matrix.
+        //Debug.Assert(columnMatrix.ColumnCount == 1);
+        //Debug.Assert(columnMatrix.RowCount == 3 * clothVertArray.Length);
+        return new Vector3(Convert.ToSingle(columnMatrix.At(3 * index, 0)),
+                           Convert.ToSingle(columnMatrix.At(3 * index + 1, 0)),
+                           Convert.ToSingle(columnMatrix.At(3 * index + 2, 0)));
+    }
+
+    void setColumnMatrixFromVector3(Matrix<double> columnMatrix, int index, Vector3 vec3)
+    {
+        //columnMatrix must be a 3m x 1 matrix.
+        //Debug.Assert(columnMatrix.ColumnCount == 1);
+        //Debug.Assert(columnMatrix.RowCount == 3 * clothVertArray.Length); 
+        Matrix<double> new_sub_p_matrix = Matrix<double>.Build.Dense(3, 1, new double[] { vec3.x, vec3.y, vec3.z});
+        columnMatrix.SetSubMatrix(3 * index, 3, 0, 1, new_sub_p_matrix);
+        columnMatrix.SetSubMatrix(3 * index, 3, 0, 1, new_sub_p_matrix);
+        columnMatrix.SetSubMatrix(3 * index, 3, 0, 1, new_sub_p_matrix);
     }
 
     //////////////////////////// Not used functions ////////////////////////////

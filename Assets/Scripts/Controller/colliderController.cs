@@ -9,35 +9,21 @@ public class colliderController : MonoBehaviour
     Vector3 screenPoint;
     static float minSize = 5.0f;
     static float maxSize = 25.0f;
+    static Color inActiveColor = new Color(0.5f, 0, 0, 0.3f);
+    static Color activeColor = new Color(0.8f, 0, 0, 1);
 
     // Start is called before the first frame update
     void Start()
     {
-        gameObject.GetComponent<Renderer>().material.color = new Color(0.5f, 0, 0, 1);
+        gameObject.GetComponent<Renderer>().material.color = inActiveColor;
     }
 
     // Update is called once per frame
     void Update()
     {
-        //// Not in camera rotation mode, and the collider is clicked.
-        //if (!Input.GetKey(KeyCode.LeftAlt) && Input.GetMouseButtonDown(0)) {
-        //    RaycastHit hit;
-        //    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        //    if (Physics.Raycast(ray, out hit)) {
-        //        GameObject hitObj = hit.collider.gameObject;
-        //        if (hitObj.tag == "Collider" && hitObj == gameObject) {
-        //            screenPoint = Camera.main.WorldToScreenPoint(transform.position);
-        //            offset = transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z)); ;
-        //            isSelected = true;
-        //            gameObject.GetComponent<Renderer>().material.color = new Color(0.8f, 0, 0, 1);
-        //        }
-        //    }
-        //}
-
         if (Input.GetMouseButtonUp(0)) {
             isSelected = false;
-            gameObject.GetComponent<Renderer>().material.color = new Color(0.5f, 0, 0, 1);
+            gameObject.GetComponent<Renderer>().material.color = inActiveColor;
         }
 
         updatePosition();
@@ -48,7 +34,7 @@ public class colliderController : MonoBehaviour
         screenPoint = Camera.main.WorldToScreenPoint(transform.position);
         offset = transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
         isSelected = true;
-        gameObject.GetComponent<Renderer>().material.color = new Color(0.8f, 0, 0, 1);
+        gameObject.GetComponent<Renderer>().material.color = activeColor;
     }
 
     void updatePosition() {
