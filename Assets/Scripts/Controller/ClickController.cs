@@ -4,11 +4,6 @@ using UnityEngine;
 
 public class ClickController : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
 
     // Update is called once per frame
     void Update()
@@ -30,13 +25,13 @@ public class ClickController : MonoBehaviour
                     }
                 }
 
-
                 if (hitObj.tag == "VertexNode")
                 {
                     NodeController node = hitObj.GetComponent<NodeController>();
                     if (node != null) {
                         node.setPinOnClick();
                     }
+
                 }
             }
         }

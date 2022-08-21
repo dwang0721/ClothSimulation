@@ -5,6 +5,7 @@ using UnityEngine;
 public class NodeController : MonoBehaviour
 {
     CPU3D simulationController3D;
+    OptMethod simulationOptMethodController;
     bool isPinned = false;
     int nodeIndex;
 
@@ -30,8 +31,17 @@ public class NodeController : MonoBehaviour
     {
         // update global node array pin status
         int status = isPinned ? 1 : 0;
-        simulationController3D = GameObject.FindGameObjectsWithTag("ExplicitCPUSimulator")[0].GetComponent<CPU3D>();
-        simulationController3D.setHairNodesPinStatusAtIndex(nodeIndex, status);
+        
+        GameObject[] simulator= GameObject.FindGameObjectsWithTag("ExplicitGPUSimulator");
+
+        if (simulator.Length != 0) {
+            // explict
+            simulationController3D = simulator[0].GetComponent<CPU3D>();
+            simulationController3D.setHairNodesPinStatusAtIndex(nodeIndex, status);
+        }else {
+            simulator = GameObject.FindGameObjectsWithTag("ImplicitCPUSimulator");
+            simulationOptMethodController = simulator[0].GetComponent<OptMethod>();
+        }
     }
 
     public void setPinOnClick()
@@ -58,4 +68,6 @@ public class NodeController : MonoBehaviour
             gameObject.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 1);
         }
     }
+
+
 }

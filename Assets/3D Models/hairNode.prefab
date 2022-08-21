@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 5229147030262423492}
   - component: {fileID: 1564771071751650684}
   - component: {fileID: 794938815140033721}
-  - component: {fileID: 5943481858339471852}
   - component: {fileID: 7328412841039099748}
+  - component: {fileID: -8745076807379126730}
   m_Layer: 0
   m_Name: hairNode
   m_TagString: VertexNode
@@ -84,19 +84,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!135 &5943481858339471852
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7765864190364122376}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &7328412841039099748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,3 +96,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdc486bc9e53ef241bd6a1dd151a5316, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!135 &-8745076807379126730
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7765864190364122376}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}

@@ -60,8 +60,8 @@ public struct ClothSimulationImplicit
     public Matrix<double> J_matrix; // 3m x 3s, J = k * AT;
     public Matrix<double> CTC_matrix; // 3m x 3m, CTC = C.transpose() * C. C this the contraint matrix;
 
-    public SpringConstraint[] springConstraint; // s, the number of springs
-    public PinConstraint[] pinConstraint; // number of pinned vertices
+    public SpringConstraint[] springConstraint; // size = the number of springs
+    public PinConstraint[] pinConstraint; // size = number of pinned vertices
 }
 
 public class OptMethod : MonoBehaviour
@@ -108,6 +108,9 @@ public class OptMethod : MonoBehaviour
     public Vector3 headPos;
     public Vector3 headLookAtPos;
 
+    // pin constraint penalty amount
+    private float PIN_PENALTY = 10000000;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -146,6 +149,7 @@ public class OptMethod : MonoBehaviour
             Vector3 location = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
             GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
+            newitem.GetComponent<NodeController>().setNodeIndex(i);
             clothVertArray[i] = newitem;
         }
 
@@ -259,7 +263,7 @@ public class OptMethod : MonoBehaviour
 
         // set up mass-srping system
         // 1. every spring is connected by two nodes, v1 and v2. 
-        // 2. every spring has a stifness coefficient. 
+        // 2. every spring has a stiffness coefficient. 
         // 3. every spring is indexed.
         // 
         //             idx:0        idx:n      idx:2n
@@ -308,7 +312,9 @@ public class OptMethod : MonoBehaviour
         LocalGlobal_update_matrixL();
 
         // calculate CTC matrix, CTC is used to set the pinned vertex;
-        LocalGlobal_compute_MatrixCTC(10000000);
+        LocalGlobal_compute_MatrixCTC(PIN_PENALTY);
+
+        //setCTCMatrixAtIndex(nNodesPerHair * 5, PIN_PENALTY);
 
         // sphere collider data
         nColliders = 3;
@@ -357,7 +363,6 @@ public class OptMethod : MonoBehaviour
 
         // Find the next position by solving equation Q * p = b. To Do: prefactor Q = LT * L.
         Matrix<double> next_p = Q.Solve(b);
-        next_p.SetSubMatrix(0, 3, 0, 1, ClothSimImp.rest_p.SubMatrix(0, 3, 0, 1));
 
         // upgrade current, previous position.
         ClothSimImp.prev_p = ClothSimImp.curr_p;
@@ -400,6 +405,14 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.CTC_matrix = Matrix<double>.Build.DenseOfIndexed(nHairs * nNodesPerHair * 3, nHairs * nNodesPerHair * 3, CTC);
     }
 
+    void setCTCMatrixAtIndex(int m_v0, float penalty)
+    {
+        Matrix<double> subPinConstraintMatrix = Matrix<double>.Build.DenseOfArray(new double[,] {  { penalty, 0, 0 },
+                                                                                                 { 0, penalty, 0 },
+                                                                                                 { 0, 0, penalty }  });
+        ClothSimImp.CTC_matrix.SetSubMatrix(3 * m_v0, 3, 3 * m_v0, 3, subPinConstraintMatrix); // void SetSubMatrix(int rowIndex, int rowCount, int columnIndex, int columnCount, Matrix<T> subMatrix)
+    }
+
     Matrix<double> LocalGlobal_compute_MatrixG(float gravity, int mSize)
     {
         // gravity matrix is a 3m x 3m size, which only affects in the Y direction
@@ -429,10 +442,9 @@ public class OptMethod : MonoBehaviour
         {
             for (int j = 0; j < nNodesPerHair; j++)
             {
-
                 // implementation
                 int nodeIndex = i * nNodesPerHair + j;
-                clothVertArray[nodeIndex].transform.position = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
+                clothVertArray[nodeIndex].transform.position = getVector3FromColumnMatrix(ClothSimImp.curr_p, nodeIndex);
             }
         }
     }
