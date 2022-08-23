@@ -314,8 +314,6 @@ public class OptMethod : MonoBehaviour
         // calculate CTC matrix, CTC is used to set the pinned vertex;
         LocalGlobal_compute_MatrixCTC(PIN_PENALTY);
 
-        //setCTCMatrixAtIndex(nNodesPerHair * 5, PIN_PENALTY);
-
         // sphere collider data
         nColliders = 3;
         colliderRadius = 4.0f;
@@ -411,6 +409,18 @@ public class OptMethod : MonoBehaviour
                                                                                                  { 0, penalty, 0 },
                                                                                                  { 0, 0, penalty }  });
         ClothSimImp.CTC_matrix.SetSubMatrix(3 * m_v0, 3, 3 * m_v0, 3, subPinConstraintMatrix); // void SetSubMatrix(int rowIndex, int rowCount, int columnIndex, int columnCount, Matrix<T> subMatrix)
+    }
+
+    void setRestPositionAtIndex(int index)
+    {
+        Vector3 currentPosAtIndex = getVector3FromColumnMatrix(ClothSimImp.curr_p, index);
+        setColumnMatrixFromVector3(ClothSimImp.rest_p, index, currentPosAtIndex);
+    }
+
+    public void setHairNodesPinStatusAtIndex(int nodeIndex, int status)
+    {
+        setCTCMatrixAtIndex(nodeIndex, status * PIN_PENALTY);
+        setRestPositionAtIndex(nodeIndex);
     }
 
     Matrix<double> LocalGlobal_compute_MatrixG(float gravity, int mSize)

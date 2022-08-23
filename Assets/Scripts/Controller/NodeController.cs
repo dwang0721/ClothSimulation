@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class NodeController : MonoBehaviour
 {
+    GameObject simulator;
     CPU3D simulationController3D;
     OptMethod simulationOptMethodController;
     bool isPinned = false;
@@ -12,14 +13,13 @@ public class NodeController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //simulationController3D = GameObject.FindGameObjectsWithTag("ExplicitCPUSimulator")[0].GetComponent<CPU3D>();
-        //Debug.Assert(simulationController3D);
+        querrySimulator();
     }
 
     // Update is called once per frame
     void Update()
     {
-        updatePinStatus();
+        updatePinColor();
     }
 
     public void setNodeIndex(int index)
@@ -32,15 +32,12 @@ public class NodeController : MonoBehaviour
         // update global node array pin status
         int status = isPinned ? 1 : 0;
         
-        GameObject[] simulator= GameObject.FindGameObjectsWithTag("ExplicitGPUSimulator");
+        // GameObject[] simulator= GameObject.FindGameObjectsWithTag("ExplicitGPUSimulator");
 
-        if (simulator.Length != 0) {
-            // explict
-            simulationController3D = simulator[0].GetComponent<CPU3D>();
+        if (simulationController3D) {
             simulationController3D.setHairNodesPinStatusAtIndex(nodeIndex, status);
         }else {
-            simulator = GameObject.FindGameObjectsWithTag("ImplicitCPUSimulator");
-            simulationOptMethodController = simulator[0].GetComponent<OptMethod>();
+            simulationOptMethodController.setHairNodesPinStatusAtIndex(nodeIndex, status);
         }
     }
 
@@ -58,7 +55,7 @@ public class NodeController : MonoBehaviour
         isPinned = status;
     }
 
-    void updatePinStatus()
+    void updatePinColor()
     {
         if (isPinned)
         {
@@ -67,6 +64,24 @@ public class NodeController : MonoBehaviour
         else {
             gameObject.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 1);
         }
+    }
+
+    void querrySimulator()
+    {
+        GlobalData globalData = GameObject.FindGameObjectsWithTag("GlobalData")[0].GetComponent<GlobalData>();
+        Debug.Assert(globalData);
+
+        if (globalData.simulationMode == SimulationMethod.ExplicitGPU)
+        {
+            simulator = GameObject.FindGameObjectsWithTag("ExplicitGPUSimulator")[0];
+            simulationController3D = simulator.GetComponent<CPU3D>();
+        }
+        else {
+            simulator = GameObject.FindGameObjectsWithTag("ImplicitCPUSimulator")[0];
+            simulationOptMethodController = simulator.GetComponent<OptMethod>();
+        }
+
+        Debug.Assert(simulator);
     }
 
 

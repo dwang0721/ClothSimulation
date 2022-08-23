@@ -211,7 +211,7 @@ GameObject:
   - component: {fileID: 4333655}
   m_Layer: 0
   m_Name: ImplicitLocalGlobalSimulator
-  m_TagString: Untagged
+  m_TagString: ImplicitCPUSimulator
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5396,7 +5396,7 @@ GameObject:
   - component: {fileID: 3580923392891208058}
   m_Layer: 0
   m_Name: ExplicitGPUSimulator
-  m_TagString: ExplicitCPUSimulator
+  m_TagString: ExplicitGPUSimulator
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

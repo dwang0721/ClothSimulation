@@ -7,7 +7,8 @@ TagManager:
   - Collider
   - GlobalData
   - VertexNode
-  - ExplicitCPUSimulator
+  - ImplicitCPUSimulator
+  - ExplicitGPUSimulator
   layers:
   - Default
   - TransparentFX
