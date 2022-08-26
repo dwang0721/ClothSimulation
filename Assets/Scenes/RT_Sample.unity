@@ -236,13 +236,13 @@ MonoBehaviour:
   planeColliderPrefab: {fileID: 7955328939988848619, guid: 926f347857a151e43a48e9519b1cc229,
     type: 3}
   theLamp: {fileID: 5476361862550543582}
+  theFlag: {fileID: 1733634324}
   weightMap: {fileID: 2800000, guid: 4618124f4785e6d4783fa8f19d58e331, type: 3}
   LightIntensityMutiplier: 10
   resolution: 0
   simulationScenario: 0
   clothMesh: {fileID: 851427422}
   clothDebugNodeSize: 0
-  theFlag: {fileID: 1733634324}
   nodeDistance: 0
   gravity: 0
   stiffness: 0
@@ -850,7 +850,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   resolution: 10
   simulationMode: 1
-  simulationScenario: 0
+  simulationScenario: 2
   renderMode: 0
   clothDebugNodeSize: 0.3
   nodeDistance: 0.7

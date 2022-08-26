@@ -71,13 +71,13 @@ public class OptMethod : MonoBehaviour
     // stuff can be seen from the UI
     public GameObject hairPrefab, sphereColliderPrefab, planeColliderPrefab;
     public Lamp theLamp;
+    public FlagController theFlag;
     public Texture2D weightMap;
     public int LightIntensityMutiplier = 10;
     public int resolution = 10;
     public SimulationScenario simulationScenario;
     public ClothMeshGenerator clothMesh;
     public float clothDebugNodeSize;
-    public FlagController theFlag;
 
     public float nodeDistance;
     public float gravity;
@@ -119,6 +119,7 @@ public class OptMethod : MonoBehaviour
         Debug.Assert(sphereColliderPrefab);
         Debug.Assert(planeColliderPrefab);
         Debug.Assert(theLamp);
+        Debug.Assert(theFlag);
         Debug.Assert(weightMap);
         Debug.Assert(clothMesh);
         Debug.Assert(theFlag);
@@ -153,6 +154,12 @@ public class OptMethod : MonoBehaviour
             clothVertArray[i] = newitem;
         }
 
+        // set pin status for the vertices
+        for (int i = 0; i < ClothSimImp.pinConstraint.Length; i++) {
+            int nodeIndex = ClothSimImp.pinConstraint[i].m_v0;
+            clothVertArray[nodeIndex].GetComponent<NodeController>().setIsPinned(1);
+        }
+
         //  instantiate sphere colliders
         colliderGeos = new GameObject[nColliders];
         for (int i = 0; i < nColliders; i++)
@@ -182,7 +189,16 @@ public class OptMethod : MonoBehaviour
 
     void initFlagController()
     {
-        theFlag.gameObject.SetActive(false);
+        if (simulationScenario != SimulationScenario.Flag)
+        {
+            theFlag.gameObject.SetActive(false);
+            return;
+        }
+
+        // get the first node position
+        Vector3 pos = getVector3FromColumnMatrix(ClothSimImp.curr_p, 0);
+        theFlag.setGlobalPose(new Vector3(0, pos.y, pos.z));
+        theFlag.setPoleLength(resolution * nodeDistance);
     }
 
     void initData()
@@ -209,7 +225,6 @@ public class OptMethod : MonoBehaviour
 
         // empty constraints
         ClothSimImp.springConstraint = new SpringConstraint[nEdges];
-        ClothSimImp.pinConstraint = new PinConstraint[2];
 
         // fill data for each node
         int nodeIndex;
@@ -258,8 +273,17 @@ public class OptMethod : MonoBehaviour
         ClothSimImp.J_matrix = Matrix<double>.Build.Dense(nHairs * nNodesPerHair * 3, nEdges * 3, 0.0f);
 
         // set the pinned nodes
-        ClothSimImp.pinConstraint[0].m_v0 = 0;
-        ClothSimImp.pinConstraint[1].m_v0 = nNodesPerHair * (nHairs-1);
+        if (simulationScenario == SimulationScenario.Static || simulationScenario == SimulationScenario.Flag) {
+            ClothSimImp.pinConstraint = new PinConstraint[nHairs];
+            for (int i = 0; i < nHairs; i++) {
+                ClothSimImp.pinConstraint[i].m_v0 = nNodesPerHair * i;
+            }
+        }
+
+        if (simulationScenario == SimulationScenario.FreeFall)
+        {
+            ClothSimImp.pinConstraint = new PinConstraint[0];
+        }
 
         // set up mass-srping system
         // 1. every spring is connected by two nodes, v1 and v2. 
@@ -316,18 +340,33 @@ public class OptMethod : MonoBehaviour
 
         // sphere collider data
         nColliders = 3;
-        colliderRadius = 4.0f;
+        colliderRadius = 3.0f;
         colliderNodeArrays = new ColliderNodes[nColliders];
-        for (int i = 0; i < nColliders; i++)
-        {
-            colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2); ;
-            colliderNodeArrays[i].y = -20.0f;
-            colliderNodeArrays[i].z = 0.0f;
-            colliderNodeArrays[i].r = colliderRadius;
-        }
+
 
         // plane collider data
         planeColliderPosY = -1 * resolution * nodeDistance / 2.0f;
+
+        for (int i = 0; i < nColliders; i++)
+        {
+            if (simulationScenario == SimulationScenario.Static || simulationScenario == SimulationScenario.Flag) {
+                colliderNodeArrays[i].x = colliderRadius * (i - nColliders / 2); ;
+                colliderNodeArrays[i].y = -20.0f;
+                colliderNodeArrays[i].z = 0.0f;
+                colliderNodeArrays[i].r = colliderRadius;
+            }
+
+            if (simulationScenario == SimulationScenario.FreeFall)
+            {
+                colliderNodeArrays[i].x = colliderRadius * Mathf.Cos(i * Mathf.PI * 2.0f / nColliders);
+                colliderNodeArrays[i].y = planeColliderPosY;
+                colliderNodeArrays[i].z = colliderRadius * Mathf.Sin(i * Mathf.PI * 2.0f / nColliders);
+                colliderNodeArrays[i].r = colliderRadius * UnityEngine.Random.Range(1.0f, 2.0f);
+            }
+
+        }
+
+
     }
 
     //////////////////////////// Cloth Simulation Loop ////////////////////////////
@@ -369,7 +408,8 @@ public class OptMethod : MonoBehaviour
         // collision
         LocalGlobal_update_position_from_collision();
 
-        // calculating damping?
+        // flag pinned Node update
+        updateFlagPinVertex();
     }
 
     //////////////////////////// Cloth data pre-computation ////////////////////////////
@@ -490,6 +530,32 @@ public class OptMethod : MonoBehaviour
             }
         }
     return;
+    }
+
+    void updateFlagPinVertex()
+    {
+        if (simulationScenario == SimulationScenario.Flag) 
+        {
+            for (int i = 0; i < ClothSimImp.pinConstraint.Length; i++) 
+            {
+                int nodeIndex = ClothSimImp.pinConstraint[i].m_v0;
+                int rowIndex = nodeIndex / nNodesPerHair;
+
+                // calculate the initial position of this node
+                float x = nodeDistance * (rowIndex - nHairs / 2);
+                float y = nodeDistance * nNodesPerHair / 2;
+
+                // get rotation for the flag
+                Quaternion q = theFlag.getPoleRotation();
+                Vector3 rotatedPos = q * new Vector3(x, 0, 0);
+
+                Vector3 location = rotatedPos + theFlag.gameObject.transform.position;
+
+                setColumnMatrixFromVector3(ClothSimImp.curr_p, nodeIndex, location);
+                setColumnMatrixFromVector3(ClothSimImp.prev_p, nodeIndex, location);
+                setColumnMatrixFromVector3(ClothSimImp.rest_p, nodeIndex, location);
+            }
+        }
     }
 
     void LocalGlobal_update_inertiaY()
