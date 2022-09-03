@@ -30,6 +30,7 @@ public class CPU3D: MonoBehaviour
     public int resolution;
     public SimulationScenario simulationScenario;
     public ClothMeshGenerator clothMesh;
+    public GameObject clothVertexGroup, colliderGroup;
     public float clothDebugNodeSize;
 
     static public int simulationSteps;
@@ -84,6 +85,8 @@ public class CPU3D: MonoBehaviour
         Debug.Assert(theFlag);
         Debug.Assert(weightMap);
         Debug.Assert(clothMesh);
+        Debug.Assert(clothVertexGroup);
+        Debug.Assert(colliderGroup);
         Debug.Assert(resolution > 0);
         Debug.Assert(nodeDistance > 0);
 
@@ -220,7 +223,8 @@ public class CPU3D: MonoBehaviour
         {
             Vector3 location = new Vector3(hairNodesArray[i].x, hairNodesArray[i].y, hairNodesArray[i].z);
             var newitem = Instantiate(hairPrefab, location, Quaternion.identity);
-            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;       
+            newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
+            newitem.transform.parent = clothVertexGroup.transform;
             newitem.GetComponent<NodeController>().setNodeIndex(i);
             newitem.GetComponent<NodeController>().setIsPinned(hairNodesArray[i].isPinned);
             hairGeos[i] = newitem;
@@ -233,12 +237,14 @@ public class CPU3D: MonoBehaviour
             Vector3 location = new Vector3(colliderNodeArrays[i].x, colliderNodeArrays[i].y, colliderNodeArrays[i].z); 
             var newitem = Instantiate(sphereColliderPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
+            newitem.transform.parent = colliderGroup.transform;
             colliderGeos[i] = newitem;
         }
 
         // instantiate plane collider
         Vector3 planeColliderLocation = new Vector3(0, planeColliderPosY, 0);
         var planeCollider = Instantiate(planeColliderPrefab, planeColliderLocation, Quaternion.identity);
+        planeCollider.transform.parent = colliderGroup.transform;
         planeCollider.transform.localScale = new Vector3(1, 1, 1) * 4;
         planeCollider.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
     }

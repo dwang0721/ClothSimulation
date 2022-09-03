@@ -13,6 +13,7 @@ public class Lamp : MonoBehaviour
     public Transform head;
     public Vector3 headLookAt;
     public GameObject lineSegmentPrefab;
+    public GameObject lightRayGroup;
 
     // Line Segments
     private GameObject lsCenter;
@@ -36,15 +37,28 @@ public class Lamp : MonoBehaviour
     {        
         Debug.Assert(explictSimulator);
         Debug.Assert(implicitSimulator);
-        Debug.Assert(head);        
+        Debug.Assert(head);
+        Debug.Assert(lineSegmentPrefab);
+        Debug.Assert(lightRayGroup);
 
         // Instantiate line segments
+        initLightRays();
+    }
+
+    void initLightRays()
+    {
         lsCenter = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsRight = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsLeft = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsUp = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
         lsDown = Instantiate(lineSegmentPrefab, Vector3.zero, Quaternion.identity);
-}
+
+        lsCenter.transform.parent = lightRayGroup.transform;
+        lsRight.transform.parent = lightRayGroup.transform;
+        lsLeft.transform.parent = lightRayGroup.transform;
+        lsUp.transform.parent = lightRayGroup.transform;
+        lsDown.transform.parent = lightRayGroup.transform;
+    }
 
     void updatePosition() {
         if (!isSelected) { return; }

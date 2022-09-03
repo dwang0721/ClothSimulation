@@ -77,6 +77,7 @@ public class OptMethod : MonoBehaviour
     public int resolution = 10;
     public SimulationScenario simulationScenario;
     public ClothMeshGenerator clothMesh;
+    public GameObject clothVertexGroup, colliderGroup;
     public float clothDebugNodeSize;
 
     public float nodeDistance;
@@ -122,6 +123,8 @@ public class OptMethod : MonoBehaviour
         Debug.Assert(theFlag);
         Debug.Assert(weightMap);
         Debug.Assert(clothMesh);
+        Debug.Assert(clothVertexGroup);
+        Debug.Assert(colliderGroup);
         Debug.Assert(theFlag);
         Debug.Assert(resolution > 0);
         Debug.Assert(nodeDistance > 0);
@@ -150,6 +153,7 @@ public class OptMethod : MonoBehaviour
             Vector3 location = getVector3FromColumnMatrix(ClothSimImp.curr_p, i);
             GameObject newitem = Instantiate(hairPrefab, location, Quaternion.identity);
             newitem.transform.localScale = new Vector3(1, 1, 1) * clothDebugNodeSize;
+            newitem.transform.parent = clothVertexGroup.transform;
             newitem.GetComponent<NodeController>().setNodeIndex(i);
             clothVertArray[i] = newitem;
         }
@@ -166,6 +170,7 @@ public class OptMethod : MonoBehaviour
         {
             Vector3 location = new Vector3(colliderNodeArrays[i].x, colliderNodeArrays[i].y, colliderNodeArrays[i].z);
             var newitem = Instantiate(sphereColliderPrefab, location, Quaternion.identity);
+            newitem.transform.parent = colliderGroup.transform;
             newitem.transform.localScale = new Vector3(1, 1, 1) * 2 * colliderNodeArrays[i].r;
             colliderGeos[i] = newitem;
         }
@@ -173,6 +178,7 @@ public class OptMethod : MonoBehaviour
         // instantiate plane collider
         Vector3 planeColliderLocation = new Vector3(0, planeColliderPosY, 0);
         var planeCollider = Instantiate(planeColliderPrefab, planeColliderLocation, Quaternion.identity);
+        planeCollider.transform.parent = colliderGroup.transform;
         planeCollider.transform.localScale = new Vector3(1, 1, 1) * 4;
         planeCollider.GetComponent<Renderer>().material.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
     }
